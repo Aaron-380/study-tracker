@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Study Planner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --surface2:#22263a;
+      --accent:  #7c6af7;
+      --accent2: #a78bfa;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --green:   #34d399;
+      --red:     #f87171;
+      --orange:  #fb923c;
+      --border:  #2d3251;
+      --math:    #a78bfa;
+      --mtrn:    #f87171;
+      --gene:    #34d399;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem 2rem 3rem;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .nav-link {
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--muted);
+      background: none;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { color: var(--text); border-color: var(--border); }
+    .nav-link.active { background: var(--surface); color: var(--accent2); border-color: var(--border); }
+    .nav-sep { color: var(--border); font-size: 1.1rem; }
+
+    /* ── Layout ── */
+    .outer-layout { max-width: 1340px; margin: 0 auto; display: flex; gap: 1.5rem; align-items: flex-start; }
+    .main-col { flex: 1; min-width: 0; max-width: 960px; }
+    .analysis-col { width: 276px; flex-shrink: 0; position: sticky; top: 1rem; }
+    @media (max-width: 960px) { .outer-layout { flex-direction: column; } .analysis-col { width: 100%; position: static; } }
+    .page { max-width: 960px; margin: 0 auto; }
+
+    .header-row {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .today-date { color: var(--muted); font-size: 0.95rem; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 680px) { .grid-2 { grid-template-columns: 1fr; } }
+    .full { grid-column: 1 / -1; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+    }
+    .card h2 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 1.2rem;
+    }
+
+    /* ── Weekly Analysis Panel ── */
+    .wa-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+    .wa-header { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent2); }
+    .wa-week-range { font-size: 0.74rem; color: var(--muted); margin: 0.15rem 0 1rem; }
+    .wa-section { margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid var(--border); }
+    .wa-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .wa-section-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.55rem; }
+    .wa-score-row { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.25rem; }
+    .wa-score { font-size: 1.45rem; font-weight: 800; }
+    .wa-verdict { font-size: 0.75rem; color: var(--muted); }
+    .wa-bar-wrap { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; margin: 0.25rem 0 0.3rem; }
+    .wa-bar { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+    .wa-meta { font-size: 0.73rem; color: var(--muted); }
+    .wa-hint { font-size: 0.71rem; color: var(--muted); font-style: italic; margin-top: 0.3rem; }
+    .wa-row-label { font-size: 0.68rem; color: var(--muted); margin-bottom: 0.22rem; }
+    .wa-dots { display: flex; gap: 0.18rem; flex-wrap: wrap; }
+    .wa-dot { width: 27px; height: 27px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+              font-size: 0.58rem; font-weight: 700; background: var(--surface2); color: var(--muted); }
+    .wa-dot.on { color: #fff; }
+    .wa-health-score { font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .wa-health-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.77rem; margin-bottom: 0.18rem; }
+    .wa-health-count { color: var(--muted); font-size: 0.71rem; }
+    .wa-fun-verdict { font-size: 0.83rem; font-weight: 600; margin-bottom: 0.45rem; }
+    .wa-fun-list { display: flex; flex-direction: column; gap: 0.28rem; }
+    .wa-fun-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.77rem;
+                   background: var(--surface2); border-radius: 8px; padding: 0.32rem 0.6rem; }
+    .wa-fun-day { margin-left: auto; color: var(--muted); font-size: 0.68rem; flex-shrink: 0; }
+
+    /* ── Urgent Banner ── */
+    .urgent-banner {
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .urgent-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .urgent-text { flex: 1; }
+    .urgent-text strong { color: var(--red); font-size: 1rem; }
+    .urgent-text p { color: var(--muted); font-size: 0.82rem; margin-top: 0.15rem; }
+    .urgent-days {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--red);
+      white-space: nowrap;
+    }
+
+    /* ── Timeline ── */
+    .timeline { position: relative; }
+    .timeline-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0.75rem;
+      margin-bottom: 0.3rem;
+      min-height: 38px;
+    }
+    .tl-time {
+      width: 52px;
+      flex-shrink: 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding-top: 10px;
+      text-align: right;
+    }
+    .tl-blocks { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .tl-free {
+      background: rgba(124,106,247,0.08);
+      border: 1px dashed rgba(124,106,247,0.25);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      min-height: 34px;
+    }
+    .tl-free-label { color: var(--muted); font-size: 0.75rem; }
+    .tl-class {
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      min-height: 34px;
+      gap: 0.5rem;
+    }
+    .tl-class-name { font-size: 0.8rem; font-weight: 600; }
+    .tl-class-loc  { font-size: 0.7rem; opacity: 0.7; }
+    .tl-divider { height: 1px; background: var(--border); margin: 0.4rem 0 0.4rem 62px; }
+
+    /* ── Free block cards ── */
+    .free-blocks { display: flex; flex-direction: column; gap: 0.75rem; }
+    .free-block {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .free-block-time {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .free-block-dur {
+      font-size: 0.78rem;
+      color: var(--accent2);
+      background: rgba(124,106,247,0.12);
+      border-radius: 99px;
+      padding: 0.2rem 0.6rem;
+      white-space: nowrap;
+    }
+    .free-block-suggest {
+      flex: 1;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .btn-lockin {
+      padding: 0.45rem 1rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-lockin:hover { opacity: 0.85; }
+    .no-free { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 1.5rem 0; }
+
+    /* ── Prep Blocks Palette ── */
+    .prep-palette {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      padding: 0.75rem 0.9rem;
+      background: var(--surface2);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+    .prep-palette-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .prep-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: grab;
+      border: 1.5px solid;
+      user-select: none;
+      transition: opacity 0.15s, transform 0.1s, box-shadow 0.1s;
+      white-space: nowrap;
+    }
+    .prep-chip:hover { opacity: 0.85; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .prep-chip:active { cursor: grabbing; }
+    .prep-chip.dragging { opacity: 0.4; }
+    .prep-chip.placed {
+      opacity: 0.35;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+    .prep-chip-dur { font-size: 0.7rem; opacity: 0.75; }
+
+    /* Resize handle on timeline events */
+    .tl-class, .tl-prep { position: relative; }
+    .tl-resize-handle {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 10px;
+      cursor: ns-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 5;
+    }
+    .tl-resize-handle::after {
+      content: '';
+      width: 28px;
+      height: 3px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.4);
+    }
+    .tl-class:hover .tl-resize-handle,
+    .tl-prep:hover .tl-resize-handle { opacity: 1; }
+    .tl-resizing { outline: 2px dashed rgba(255,255,255,0.3); outline-offset: -2px; }
+
+    /* Prep block in timeline */
+    .tl-prep {
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.6rem;
+      min-height: 34px;
+      gap: 0.5rem;
+      border-left: 3px solid;
+    }
+    .tl-prep-name { font-size: 0.78rem; font-weight: 600; }
+    .tl-prep-remove {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0 2px;
+      line-height: 1;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+    .tl-prep-remove:hover { color: var(--red); }
+
+    /* Drop zone highlight */
+    .timeline-row.tl-drag-over .tl-blocks {
+      outline: 2px dashed var(--accent2);
+      outline-offset: -2px;
+      border-radius: 8px;
+      background: rgba(124,106,247,0.08);
+    }
+    .timeline-row.tl-drop-blocked .tl-blocks {
+      outline: 2px dashed var(--red);
+      outline-offset: -2px;
+      border-radius: 8px;
+      background: rgba(248,113,113,0.06);
+    }
+
+    /* ── Add-task form inside palette ── */
+    .prep-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+      flex-shrink: 0;
+      margin: 0 0.25rem;
+    }
+    .add-task-form {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .add-task-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+      width: 130px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .add-task-input:focus { border-color: var(--accent); }
+    .add-task-input::placeholder { color: var(--muted); }
+    .add-task-dur {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.5rem;
+      width: 68px;
+      outline: none;
+      cursor: pointer;
+    }
+    .add-task-custom-dur {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.5rem;
+      width: 80px;
+      outline: none;
+    }
+    .add-task-custom-dur::placeholder { color: var(--muted); }
+    .add-task-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.32rem 0.7rem;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .add-task-btn:hover { opacity: 0.85; }
+    .task-type-btn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 0.3rem 0.6rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .task-type-btn.active[data-type="study"] {
+      border-color: #34d399;
+      color: #34d399;
+      background: rgba(52,211,153,0.12);
+    }
+    .task-type-btn.active[data-type="other"] {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(167,139,250,0.12);
+    }
+    .task-type-btn.active[data-type="fun"] {
+      border-color: #f472b6;
+      color: #f472b6;
+      background: rgba(244,114,182,0.12);
+    }
+    .task-type-btn:not(.active):hover { border-color: var(--muted); }
+    .prep-chip-type {
+      font-size: 0.62rem;
+      font-weight: 700;
+      opacity: 0.65;
+      margin-left: 2px;
+      letter-spacing: 0.03em;
+    }
+    .prep-chip-del {
+      background: none;
+      border: none;
+      color: inherit;
+      opacity: 0.4;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0 0 0 2px;
+      line-height: 1;
+      transition: opacity 0.15s;
+    }
+    .prep-chip-del:hover { opacity: 1; }
+
+    /* ── Week strip ── */
+    .week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
+    .week-day {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 0.4rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .week-day:hover { border-color: var(--accent); }
+    .week-day.today    { border-color: var(--accent); background: rgba(124,106,247,0.1); }
+    .week-day.selected { outline: 2px solid var(--accent2); outline-offset: 2px; }
+    .week-day.has-exam { border-color: var(--red); }
+    .wd-name { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .wd-date { font-size: 0.9rem; font-weight: 700; margin: 0.2rem 0; }
+    .wd-free  { font-size: 0.68rem; color: var(--green); }
+    .wd-busy  { font-size: 0.68rem; color: var(--muted); }
+    .wd-break { font-size: 0.68rem; color: var(--accent2); font-style: italic; }
+    .wd-exam   { font-size: 0.65rem; color: var(--red); margin-top: 0.15rem; font-weight: 700; }
+    .wd-blocks { font-size: 0.63rem; color: var(--accent2); margin-top: 0.1rem; }
+
+    /* ── Classes list ── */
+    .class-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .class-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.9rem;
+      background: var(--surface2);
+      border-radius: 10px;
+      border-left: 3px solid transparent;
+    }
+    .ci-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .ci-info { flex: 1; }
+    .ci-name { font-size: 0.88rem; font-weight: 600; }
+    .ci-detail { font-size: 0.74rem; color: var(--muted); margin-top: 0.1rem; }
+    .ci-time { font-size: 0.78rem; color: var(--accent2); white-space: nowrap; font-weight: 600; }
+
+    /* ── Subjects ── */
+    .subject-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .subject-tag {
+      padding: 0.3rem 0.8rem;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: opacity 0.15s;
+    }
+    .subject-tag:hover { opacity: 0.8; }
+    .tag-math { background: rgba(167,139,250,0.15); color: var(--math); border-color: rgba(167,139,250,0.3); }
+    .tag-mtrn { background: rgba(248,113,113,0.15); color: var(--mtrn); border-color: rgba(248,113,113,0.3); }
+    .tag-gene { background: rgba(52,211,153,0.15); color: var(--gene); border-color: rgba(52,211,153,0.3); }
+
+    .empty-day { color: var(--muted); font-size: 0.88rem; padding: 0.5rem 0; }
+
+    @media (max-width: 480px) {
+      .week-strip { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-link" href="study-tracker.html">⏱ Tracker</a>
+  <span class="nav-sep">|</span>
+  <a class="nav-link active" href="study-planner.html">📅 Planner</a>
+  <span class="nav-sep">|</span>
+  <a class="nav-link" href="study-actionables.html">✅ Actionables</a>
+</nav>
+
+<div class="outer-layout">
+<div class="main-col">
+<div class="page">
+  <div class="header-row">
+    <h1>Study Planner</h1>
+    <span class="today-date" id="todayDate"></span>
+  </div>
+  <p class="subtitle" id="subtitle">Loading your day...</p>
+
+  <!-- Urgent banner (shown when exam within 5 days) -->
+  <div class="urgent-banner" id="urgentBanner" style="display:none">
+    <div class="urgent-icon">⚠️</div>
+    <div class="urgent-text">
+      <strong id="urgentTitle"></strong>
+      <p id="urgentSub"></p>
+    </div>
+    <div class="urgent-days" id="urgentDays"></div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- Today's Free Blocks -->
+    <div class="card">
+      <h2>Study Windows — Today</h2>
+      <div class="free-blocks" id="freeBlocks"></div>
+    </div>
+
+    <!-- Today's Classes -->
+    <div class="card">
+      <h2>Today's Classes</h2>
+      <div class="class-list" id="classList"></div>
+      <div style="margin-top:1rem;">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">Quick-fill subject:</div>
+        <div class="subject-tags">
+          <span class="subject-tag tag-math" onclick="fillSubject('MATH2089')">MATH2089</span>
+          <span class="subject-tag tag-mtrn" onclick="fillSubject('MTRN3210')">MTRN3210</span>
+          <span class="subject-tag tag-gene" onclick="fillSubject('GENE1500')">GENE1500</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- This Week -->
+    <div class="card full">
+      <h2>This Week</h2>
+      <div class="week-strip" id="weekStrip"></div>
+    </div>
+
+    <!-- Day Timeline -->
+    <div class="card full">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+        <h2 style="margin:0">Today's Timeline</h2>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <button id="restoreClassesBtn" onclick="restoreDay(selectedDay);renderAll()" style="display:none;font-size:0.7rem;padding:0.18rem 0.55rem;background:transparent;border:1px solid #f59e0b;border-radius:6px;color:#f59e0b;cursor:pointer">↩ Restore classes</button>
+        </div>
+      </div>
+      <div class="prep-palette" id="prepPalette"></div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /main-col -->
+
+<!-- Weekly Analysis Sidebar -->
+<div class="analysis-col" id="weekAnalysis"></div>
+
+</div><!-- /outer-layout -->
+
+<script>
+  // ── Timetable (hardcoded from your UNSW calendar) ──
+  // day: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+  const TIMETABLE = {
+    1: [ // Monday
+      { code:'MATH2089', name:'Numerical Methods Lecture', start:'10:00', end:'12:00', loc:'Online',           color:'var(--math)' },
+      { code:'MTRN3210', name:'Control Systems Lecture',   start:'11:00', end:'13:00', loc:'Colombo Theatre A', color:'var(--mtrn)' }
+    ],
+    2: [ // Tuesday
+      { code:'MTRN3210', name:'Control Systems Lecture',   start:'09:00', end:'11:00', loc:'Colombo Theatre A',          color:'var(--mtrn)' },
+      { code:'MATH2089', name:'Numerical Methods Tutorial',start:'09:00', end:'10:00', loc:'H13 Lawrence East G12A',     color:'var(--math)', isExam:false },
+      { code:'MTRN3210', name:'Control Systems Lab',       start:'11:00', end:'13:00', loc:'Willis Annexe MTRN Lab 213', color:'var(--mtrn)' }
+    ],
+    3: [ // Wednesday
+      { code:'MTRN3210', name:'Control Systems Workshop', start:'09:00', end:'11:00', loc:'Mathews Theatre D',       color:'var(--mtrn)' },
+      { code:'MATH2089', name:'Numerical Methods Lecture',start:'11:00', end:'12:00', loc:'Online',                  color:'var(--math)' },
+      { code:'MATH2089', name:'Numerical Methods Tutorial',start:'13:00', end:'14:00', loc:'H13 Lawrence East G12A', color:'var(--math)' }
+    ],
+    4: [ // Thursday
+      { code:'GENE1500', name:'Creative Entrepreneurship Lecture', start:'09:00', end:'10:00', loc:'Tyree Energy Technology LG07', color:'var(--gene)' },
+      { code:'MATH2089', name:'Numerical Methods Lecture',         start:'09:00', end:'10:00', loc:'Online',                      color:'var(--math)' },
+      { code:'GENE1500', name:'Creative Entrepreneurship Tutorial',start:'11:00', end:'13:00', loc:'Library 176A',                color:'var(--gene)' },
+      { code:'MATH2089', name:'Numerical Methods Tutorial',        start:'13:00', end:'14:00', loc:'Online',                     color:'var(--math)' }
+    ],
+    5: [], // Friday
+    6: [], // Saturday
+    0: []  // Sunday
+  };
+
+  // UNSW break / flexibility weeks — no regular classes run during these
+  const BREAK_WEEKS = [
+    { start: '2026-03-23', end: '2026-03-29', label: 'Flexibility Week' },
+  ];
+
+  function isBreakWeek(date) {
+    const ds = dateStr(date);
+    return BREAK_WEEKS.some(b => ds >= b.start && ds <= b.end);
+  }
+  function breakLabel(date) {
+    const ds = dateStr(date);
+    const b = BREAK_WEEKS.find(b => ds >= b.start && ds <= b.end);
+    return b ? b.label : null;
+  }
+
+  // One-time special events (YYYY-MM-DD) — synced from Google Calendar
+  const SPECIAL = {
+    '2026-03-27': [
+      { code:'🍺', name:'Pub Crawl', start:'19:00', end:'23:00', loc:'', color:'#fbbf24', isSocial:true }
+    ],
+    '2026-03-31': [
+      { code:'MATH2089', name:'MATH2089 EXAM ⚠️', start:'09:00', end:'10:00',
+        loc:'H13 Lawrence East G12A', color:'var(--red)', isExam:true }
+    ]
+  };
+
+  // Upcoming deadlines / exams to flag
+  const DEADLINES = [
+    { label:'MATH2089 Exam', date:'2026-03-31', subject:'MATH2089', loc:'H13 Lawrence East G12A', time:'9:00 AM' }
+  ];
+
+  // Skipped class events: { 'YYYY-MM-DD': ['code|origStart', ...] }
+  const SKIPPED_KEY = 'skipped_events_v1';
+  let skippedEvents = {};
+  try { skippedEvents = JSON.parse(localStorage.getItem(SKIPPED_KEY) || '{}'); } catch(e){}
+
+  // Moved class events: { 'YYYY-MM-DD': { 'code|origStart': newStartMins } }
+  const CLASS_OVERRIDES_KEY = 'class_overrides_v1';
+  let classOverrides = {};
+  try { classOverrides = JSON.parse(localStorage.getItem(CLASS_OVERRIDES_KEY) || '{}'); } catch(e){}
+  function setClassOverride(date, ev, newStartMins) {
+    const ds = dateStr(date);
+    if (!classOverrides[ds]) classOverrides[ds] = {};
+    classOverrides[ds][ev.code + '|' + ev.origStart] = newStartMins;
+    localStorage.setItem(CLASS_OVERRIDES_KEY, JSON.stringify(classOverrides));
+  }
+
+  // Per-day duration overrides (must be declared before getSchedule is called below)
+  const DUR_OVERRIDES_KEY = 'dur_overrides_v1';
+  let durOverrides = {};
+  try { durOverrides = JSON.parse(localStorage.getItem(DUR_OVERRIDES_KEY) || '{}'); } catch(e){}
+
+  // ── Today (declared early so prep blocks and helpers can reference it) ──
+  const today = new Date();
+  const todayEvents = getSchedule(today);
+
+  // ── Prep Blocks ──
+  const PREP_BLOCKS = [
+    { id:'breakfast', name:'Breakfast + Dress Up', emoji:'🌅', durationMins:90,  color:'#f59e0b', code:'🌅 Prep'  },
+    { id:'lunch',     name:'Lunch Break',          emoji:'🍽️', durationMins:60,  color:'#34d399', code:'🍽️ Lunch' },
+    { id:'gym',       name:'Gym',                  emoji:'💪', durationMins:60,  color:'#60a5fa', code:'💪 Gym'   },
+  ];
+
+  function skipEvent(date, ev) {
+    const ds = dateStr(date);
+    if (!skippedEvents[ds]) skippedEvents[ds] = [];
+    const key = ev.code + '|' + (ev.origStart || ev.start);
+    if (!skippedEvents[ds].includes(key)) skippedEvents[ds].push(key);
+    localStorage.setItem(SKIPPED_KEY, JSON.stringify(skippedEvents));
+  }
+  function restoreDay(date) {
+    const ds = dateStr(date);
+    delete skippedEvents[ds];
+    delete classOverrides[ds];
+    delete durOverrides[ds];
+    localStorage.setItem(SKIPPED_KEY, JSON.stringify(skippedEvents));
+    localStorage.setItem(CLASS_OVERRIDES_KEY, JSON.stringify(classOverrides));
+    localStorage.setItem(DUR_OVERRIDES_KEY, JSON.stringify(durOverrides));
+  }
+  function isSkipped(date, ev) {
+    const ds = dateStr(date);
+    return (skippedEvents[ds] || []).includes(ev.code + '|' + (ev.origStart || ev.start));
+  }
+
+  // Per-day duration overrides: { 'YYYY-MM-DD': { key: durationMins } }
+  // key = blockId for prep/custom blocks, or 'code|origStart' for class events
+
+  function getDurOverride(date, key) {
+    return (durOverrides[dateStr(date)] || {})[key];
+  }
+  function setDurOverride(date, key, mins) {
+    const ds = dateStr(date);
+    if (!durOverrides[ds]) durOverrides[ds] = {};
+    durOverrides[ds][key] = Math.max(30, mins);
+    localStorage.setItem(DUR_OVERRIDES_KEY, JSON.stringify(durOverrides));
+  }
+
+  // Per-day placements: { 'YYYY-MM-DD': { blockId: slotStartMins } }
+  const PLACEMENTS_KEY = 'prep_placements_v2';
+  let allPlacements = {};
+  try { allPlacements = JSON.parse(localStorage.getItem(PLACEMENTS_KEY) || '{}'); } catch(e){}
+
+  // Migrate old single-day format if present
+  (() => {
+    const old = localStorage.getItem('prep_placements_today');
+    const oldDate = localStorage.getItem('prep_placements_date');
+    if (old && oldDate && !allPlacements[oldDate]) {
+      try { allPlacements[oldDate] = JSON.parse(old); } catch(e){}
+      localStorage.removeItem('prep_placements_today');
+      localStorage.removeItem('prep_placements_date');
+      localStorage.setItem(PLACEMENTS_KEY, JSON.stringify(allPlacements));
+    }
+  })();
+
+  // Currently viewed day (starts as today)
+  let selectedDay = new Date(today);
+
+  function dayPlacements(d) {
+    return allPlacements[dateStr(d || selectedDay)] || {};
+  }
+  function setPlacement(blockId, slotStart) {
+    const ds = dateStr(selectedDay);
+    if (!allPlacements[ds]) allPlacements[ds] = {};
+    allPlacements[ds][blockId] = slotStart;
+    localStorage.setItem(PLACEMENTS_KEY, JSON.stringify(allPlacements));
+  }
+  function removePlacement(blockId) {
+    const ds = dateStr(selectedDay);
+    if (allPlacements[ds]) {
+      delete allPlacements[ds][blockId];
+      localStorage.setItem(PLACEMENTS_KEY, JSON.stringify(allPlacements));
+    }
+  }
+  function clearAllCustomBlocks() {
+    if (!customTasks.length) return;
+    // Remove all placements for custom tasks across all days
+    const customIds = new Set(customTasks.map(t => t.id));
+    Object.keys(allPlacements).forEach(ds => {
+      customIds.forEach(id => delete allPlacements[ds][id]);
+    });
+    customTasks = [];
+    saveCustomTasks();
+    localStorage.setItem(PLACEMENTS_KEY, JSON.stringify(allPlacements));
+    renderAll();
+  }
+
+  // Convert placed blocks for the selected day into event objects
+  function getPrepEvents() {
+    const placements = dayPlacements();
+    return getAllBlocks()
+      .filter(b => placements[b.id] != null)
+      .map(b => {
+        const dur = getDurOverride(selectedDay, b.id) ?? b.durationMins;
+        return {
+          code:        b.code || b.name,
+          name:        b.name,
+          start:       toHHMM(placements[b.id]),
+          end:         toHHMM(placements[b.id] + dur),
+          loc:         '',
+          color:       (b.type && TYPE_COLOR[b.type]) || b.color,
+          isPrep:      true,
+          prepId:      b.id,
+          prepDur:     dur,
+          isStudyTask: b.type === 'study',
+        };
+      });
+  }
+
+  // ── Custom Task Blocks ──
+  const TASK_COLORS = ['#c084fc','#f472b6','#fb923c','#facc15','#a3e635','#2dd4bf','#38bdf8','#e879f9'];
+  // Fixed color per block type — instantly readable at a glance
+  const TYPE_COLOR = { study: '#34d399', other: '#fb923c', fun: '#f472b6' };
+  const CUSTOM_TASKS_KEY = 'custom_task_blocks';
+
+  let customTasks = [];
+  try { customTasks = JSON.parse(localStorage.getItem(CUSTOM_TASKS_KEY) || '[]'); } catch(e){}
+
+  function saveCustomTasks() {
+    localStorage.setItem(CUSTOM_TASKS_KEY, JSON.stringify(customTasks));
+  }
+
+  function getAllBlocks() {
+    return [...PREP_BLOCKS, ...customTasks];
+  }
+
+  function getAllEvents() {
+    return [...getSchedule(selectedDay), ...getPrepEvents()];
+  }
+
+  // Day timeline window
+  const DAY_START = 7;   // 7am
+  const DAY_END   = 25;  // 1am (next day)
+
+  // ── Helpers ──
+  function toMins(t) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+  function fmtMins(m) {
+    const h = Math.floor(m / 60), min = m % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hh = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    return `${hh}${min ? ':' + String(min).padStart(2,'0') : ''} ${ampm}`;
+  }
+  function fmtDur(mins) {
+    if (mins < 60) return `${mins}m free`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return m ? `${h}h ${m}m free` : `${h}h free`;
+  }
+  function toHHMM(mins) {
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+  function dateStr(d) {
+    // Use local date components to avoid UTC offset shifting the date (e.g. AEST = UTC+11)
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function mergeIntervals(events) {
+    const sorted = events
+      .map(e => ({ s: toMins(e.start), e: toMins(e.end) }))
+      .sort((a,b) => a.s - b.s);
+    const merged = [];
+    for (const iv of sorted) {
+      if (!merged.length || iv.s > merged[merged.length-1].e) merged.push({...iv});
+      else merged[merged.length-1].e = Math.max(merged[merged.length-1].e, iv.e);
+    }
+    return merged;
+  }
+
+  function getFreeBlocks(events) {
+    // Study-task blocks live *within* free time — exclude them from busy so they don't shrink it
+    const busy = mergeIntervals(events.filter(e => !e.isStudyTask));
+    const free = [];
+    let cur = DAY_START * 60;
+    for (const b of busy) {
+      if (b.s > cur) free.push({ s: cur, e: b.s });
+      cur = Math.max(cur, b.e);
+    }
+    if (cur < DAY_END * 60) free.push({ s: cur, e: DAY_END * 60 });
+    return free.filter(f => f.e - f.s >= 30);
+  }
+
+  function getSchedule(date) {
+    const dow = date.getDay();
+    const ds  = dateStr(date);
+    // No regular classes during break weeks — only keep exams/specials
+    // Tag each event with origStart (stable key even after moving)
+    const base = isBreakWeek(date) ? [] : (TIMETABLE[dow] || []).map(e => ({...e, origStart: e.start}));
+    const specials = (SPECIAL[ds] || []).map(e => ({...e, origStart: e.origStart || e.start}));
+    // Merge specials in, replacing regular events if isExam
+    const all = [...base];
+    for (const sp of specials) {
+      if (sp.isExam) {
+        const si = all.findIndex(e => e.code === sp.code && toMins(e.origStart) === toMins(sp.origStart));
+        if (si !== -1) all.splice(si, 1);
+      }
+      all.push(sp);
+    }
+    // Filter skipped (keyed by code|origStart)
+    const skipped = skippedEvents[ds] || [];
+    const filtered = all.filter(e => !skipped.includes(e.code + '|' + e.origStart));
+    // Apply position overrides (moved classes)
+    const overrides = classOverrides[ds] || {};
+    filtered.forEach(e => {
+      const key = e.code + '|' + e.origStart;
+      if (overrides[key] !== undefined) {
+        const dur = toMins(e.end) - toMins(e.start);
+        e.start = toHHMM(overrides[key]);
+        e.end   = toHHMM(overrides[key] + dur);
+      }
+      // Apply duration overrides
+      const durOv = getDurOverride(date, key);
+      if (durOv !== undefined) {
+        e.end = toHHMM(toMins(e.start) + durOv);
+        e.overrideDur = durOv;
+      }
+    });
+    return filtered.sort((a,b) => toMins(a.start) - toMins(b.start));
+  }
+
+  function suggestSubject(freeBlock, events) {
+    // Check upcoming deadlines
+    const nearest = DEADLINES
+      .map(d => ({ ...d, diff: (new Date(d.date) - new Date()) / 86400000 }))
+      .filter(d => d.diff >= 0 && d.diff <= 7)
+      .sort((a,b) => a.diff - b.diff);
+    if (nearest.length) return `Suggested: ${nearest[0].subject} — exam in ${Math.ceil(nearest[0].diff)}d`;
+    // else just show subjects from today's classes
+    const codes = [...new Set(events.map(e => e.code))];
+    if (codes.length) return `Suggested: ${codes.join(' / ')}`;
+    return 'No classes today — perfect study day!';
+  }
+
+  // ── Render ──
+  // Urgent banner (static — doesn't change with prep blocks)
+  const urgent = DEADLINES
+    .map(d => ({ ...d, diff: Math.ceil((new Date(d.date) - new Date()) / 86400000) }))
+    .filter(d => d.diff >= 0 && d.diff <= 5)
+    .sort((a,b) => a.diff - b.diff)[0];
+  if (urgent) {
+    document.getElementById('urgentBanner').style.display = 'flex';
+    document.getElementById('urgentTitle').textContent = `${urgent.label} — ${urgent.diff === 0 ? 'TODAY' : urgent.diff + ' day' + (urgent.diff>1?'s':'') + ' away'}`;
+    document.getElementById('urgentSub').textContent = `${urgent.time} · ${urgent.loc}`;
+    document.getElementById('urgentDays').textContent = urgent.diff === 0 ? 'TODAY' : `${urgent.diff}d`;
+  }
+
+  // ── renderAll: recalculate everything when selected day or blocks change ──
+  function renderAll() {
+    const selEvents    = getSchedule(selectedDay);
+    const allEvents    = getAllEvents();
+    const freePeriods  = getFreeBlocks(allEvents);
+    const classCount   = selEvents.filter(e => !e.isSocial).length;
+    const totalFreeH   = Math.round(freePeriods.reduce((s,f) => s + (f.e - f.s), 0) / 60 * 10) / 10;
+    const studyPlanned = getPrepEvents().filter(e => e.isStudyTask).reduce((s,e) => s + (toMins(e.end) - toMins(e.start)), 0);
+    const studyTag     = studyPlanned > 0
+      ? ` · 📚 ${Math.round(studyPlanned/60*10)/10}h study planned`
+      : '';
+    const isSelToday   = selectedDay.toDateString() === today.toDateString();
+
+    // Header date — updates when switching days
+    document.getElementById('todayDate').textContent =
+      selectedDay.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+    // Subtitle
+    document.getElementById('subtitle').textContent =
+      isBreakWeek(selectedDay)
+        ? `Flexibility week — no classes · ${totalFreeH}h free for study${studyTag}`
+        : classCount
+          ? `${classCount} class${classCount>1?'es':''} · ${totalFreeH}h study time available${studyTag}`
+          : `No classes · ${totalFreeH}h free for study${studyTag}`;
+
+    // Free block cards
+    const fbEl = document.getElementById('freeBlocks');
+    fbEl.innerHTML = '';
+    if (!freePeriods.length) {
+      fbEl.innerHTML = `<div class="no-free">No significant free blocks${isSelToday ? ' today' : ''}.</div>`;
+    } else {
+      freePeriods.forEach(f => {
+        const dur = f.e - f.s;
+        const endHHMM = toHHMM(f.e);
+        const card = document.createElement('div');
+        card.className = 'free-block';
+        card.innerHTML = `
+          <div>
+            <div class="free-block-time">${fmtMins(f.s)} – ${fmtMins(f.e)}</div>
+          </div>
+          <span class="free-block-dur">${fmtDur(dur)}</span>
+          <span class="free-block-suggest">${suggestSubject(f, selEvents)}</span>
+          ${isSelToday ? `<button class="btn-lockin" onclick="lockIn('${endHHMM}')">Lock In →</button>` : ''}
+        `;
+        fbEl.appendChild(card);
+      });
+    }
+
+    // Weekly analysis sidebar
+    renderWeekAnalysis();
+
+    // Write day summary for tracker's analysis panel
+    const plannerSummary = JSON.parse(localStorage.getItem('planner_day_summary') || '{}');
+    plannerSummary[dateStr(selectedDay)] = {
+      freeStudyMins: Math.round(freePeriods.reduce((s,f) => s+(f.e-f.s), 0)),
+      classCount,
+    };
+    localStorage.setItem('planner_day_summary', JSON.stringify(plannerSummary));
+
+    // Week strip (highlights selected day)
+    renderWeekStrip();
+
+    // Palette + Timeline
+    renderPalette();
+    buildTimeline(selectedDay);
+
+    // Show restore button if any classes are skipped for this day
+    const restoreBtn = document.getElementById('restoreClassesBtn');
+    if (restoreBtn) {
+      const ds = dateStr(selectedDay);
+      const hasSkipped   = (skippedEvents[ds] || []).length > 0;
+      const hasOverrides = Object.keys(classOverrides[ds] || {}).length > 0;
+      restoreBtn.style.display = (hasSkipped || hasOverrides) ? '' : 'none';
+    }
+  }
+
+  // ── renderPalette: drag-and-drop prep block chips + add-task form ──
+  function renderPalette() {
+    const el = document.getElementById('prepPalette');
+    el.innerHTML = '';
+
+    const label = document.createElement('div');
+    label.className = 'prep-palette-label';
+    label.textContent = 'Blocks →';
+    el.appendChild(label);
+
+    function makeChip(b, isCustom) {
+      const placed = dayPlacements()[b.id] != null;
+      const chip = document.createElement('div');
+      chip.className = 'prep-chip' + (placed ? ' placed' : '');
+      chip.draggable = !placed;
+      chip.dataset.blockId = b.id;
+      const chipColor = (b.type && TYPE_COLOR[b.type]) || b.color;
+      chip.style.color = chipColor;
+      chip.style.borderColor = chipColor;
+      chip.style.background = chipColor + '18';
+      const durLabel = b.durationMins >= 60
+        ? (b.durationMins % 60 === 0 ? (b.durationMins/60)+'h' : (b.durationMins/60).toFixed(1)+'h')
+        : b.durationMins + 'm';
+      const typeTag = b.type === 'study' ? '<span class="prep-chip-type">STUDY</span>'
+                    : b.type === 'other'  ? '<span class="prep-chip-type">OTHER</span>'
+                    : '';
+      chip.innerHTML = `${b.emoji} ${b.name} <span class="prep-chip-dur">${durLabel}</span>${typeTag}`;
+
+      // Delete button for custom tasks (only when not placed)
+      if (isCustom && !placed) {
+        const del = document.createElement('button');
+        del.className = 'prep-chip-del';
+        del.textContent = '×';
+        del.title = 'Remove task';
+        del.onclick = e => {
+          e.stopPropagation();
+          customTasks = customTasks.filter(t => t.id !== b.id);
+          // Remove from all days
+          Object.keys(allPlacements).forEach(ds => delete allPlacements[ds][b.id]);
+          saveCustomTasks();
+          localStorage.setItem(PLACEMENTS_KEY, JSON.stringify(allPlacements));
+          renderAll();
+        };
+        chip.appendChild(del);
+      }
+
+      if (!placed) {
+        chip.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', b.id);
+          e.dataTransfer.effectAllowed = 'move';
+          chip.classList.add('dragging');
+        });
+        chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+      }
+      return chip;
+    }
+
+    // Fixed prep blocks
+    PREP_BLOCKS.forEach(b => el.appendChild(makeChip(b, false)));
+
+    // Divider before custom tasks / add form
+    const div = document.createElement('div');
+    div.className = 'prep-divider';
+    el.appendChild(div);
+
+    // Custom task chips
+    customTasks.forEach(b => el.appendChild(makeChip(b, true)));
+
+    // Add-task form
+    const form = document.createElement('div');
+    form.className = 'add-task-form';
+    form.innerHTML = `
+      <button class="task-type-btn active" id="typeStudy" data-type="study">📚 Study</button>
+      <button class="task-type-btn"        id="typeOther" data-type="other">📌 Other</button>
+      <button class="task-type-btn"        id="typeFun"   data-type="fun">🎉 Fun</button>
+      <input class="add-task-input" id="newTaskName" type="text" placeholder="Task name…" maxlength="30" />
+      <select class="add-task-dur" id="newTaskDur">
+        <option value="15">15 min</option>
+        <option value="30" selected>30 min</option>
+        <option value="45">45 min</option>
+        <option value="60">1 hr</option>
+        <option value="90">1.5 hr</option>
+        <option value="120">2 hr</option>
+        <option value="150">2.5 hr</option>
+        <option value="180">3 hr</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <input class="add-task-custom-dur" id="newTaskDurCustom" type="number" min="1" max="720" placeholder="mins" style="display:none" />
+      <button class="add-task-btn" id="addTaskBtn">+ Add</button>
+    `;
+    el.appendChild(form);
+
+    // Type toggle
+    let selectedType = 'study';
+    const typeIds = ['typeStudy','typeOther','typeFun'];
+    typeIds.forEach(id => {
+      document.getElementById(id).onclick = () => {
+        selectedType = document.getElementById(id).dataset.type;
+        typeIds.forEach(x => document.getElementById(x).classList.toggle('active', x === id));
+      };
+    });
+
+    // Show/hide custom duration input
+    document.getElementById('newTaskDur').addEventListener('change', function() {
+      const custom = document.getElementById('newTaskDurCustom');
+      if (this.value === 'custom') {
+        custom.style.display = '';
+        custom.focus();
+      } else {
+        custom.style.display = 'none';
+      }
+    });
+
+    // Add task logic
+    function addTask() {
+      const nameEl   = document.getElementById('newTaskName');
+      const durEl    = document.getElementById('newTaskDur');
+      const customEl = document.getElementById('newTaskDurCustom');
+      const name = nameEl.value.trim();
+      if (!name) { nameEl.focus(); return; }
+      let durMins;
+      if (durEl.value === 'custom') {
+        durMins = parseInt(customEl.value);
+        if (!durMins || durMins < 1) { customEl.focus(); return; }
+      } else {
+        durMins = parseInt(durEl.value);
+      }
+      const newTask = {
+        id:           'task_' + Date.now(),
+        name,
+        emoji:        selectedType === 'study' ? '📚' : selectedType === 'fun' ? '🎉' : '📌',
+        type:         selectedType,
+        durationMins: durMins,
+        color:        TYPE_COLOR[selectedType],
+        code:         name,
+      };
+      customTasks.push(newTask);
+      saveCustomTasks();
+      nameEl.value = '';
+      renderAll();
+    }
+
+    document.getElementById('addTaskBtn').onclick = addTask;
+    document.getElementById('newTaskName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTask();
+    });
+  }
+
+  // Classes list (social events shown separately, not as classes)
+  const clEl = document.getElementById('classList');
+  const classEvents  = todayEvents.filter(e => !e.isSocial);
+  const socialEvents = todayEvents.filter(e => e.isSocial);
+
+  if (!classEvents.length) {
+    clEl.innerHTML = '<div class="empty-day">No classes today 🎉</div>';
+  } else {
+    classEvents.forEach(e => {
+      const item = document.createElement('div');
+      item.className = 'class-item';
+      item.style.borderLeftColor = e.color;
+      item.innerHTML = `
+        <div class="ci-dot" style="background:${e.color}"></div>
+        <div class="ci-info">
+          <div class="ci-name">${e.name}</div>
+          <div class="ci-detail">${e.loc}</div>
+        </div>
+        <div class="ci-time">${fmtMins(toMins(e.start))} – ${fmtMins(toMins(e.end))}</div>
+      `;
+      clEl.appendChild(item);
+    });
+  }
+
+  // Social / personal events shown as a separate note under classes
+  if (socialEvents.length) {
+    socialEvents.forEach(e => {
+      const item = document.createElement('div');
+      item.className = 'class-item';
+      item.style.borderLeftColor = e.color;
+      item.style.opacity = '0.75';
+      item.innerHTML = `
+        <div class="ci-dot" style="background:${e.color}"></div>
+        <div class="ci-info">
+          <div class="ci-name" style="color:${e.color}">${e.name} <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">(personal)</span></div>
+          <div class="ci-detail">Unavailable — not counted as study time</div>
+        </div>
+        <div class="ci-time">${fmtMins(toMins(e.start))} – ${fmtMins(toMins(e.end))}</div>
+      `;
+      clEl.appendChild(item);
+    });
+  }
+
+  // Week strip — rebuilt whenever selected day changes
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function renderWeekStrip() {
+    const weekEl = document.getElementById('weekStrip');
+    weekEl.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - ((today.getDay() + 6) % 7) + i); // Mon–Sun
+      const evts    = getSchedule(d);
+      // Include placed blocks in free-time calc for this day
+      const placed  = getAllBlocks()
+        .filter(b => (allPlacements[dateStr(d)] || {})[b.id] != null)
+        .map(b => {
+          const s = allPlacements[dateStr(d)][b.id];
+          return { start: toHHMM(s), end: toHHMM(s + b.durationMins), isStudyTask: b.type === 'study' };
+        });
+      const free    = getFreeBlocks([...evts, ...placed]);
+      const freeH   = Math.round(free.reduce((s,f) => s + (f.e-f.s), 0) / 60 * 10) / 10;
+      const isToday = d.toDateString() === today.toDateString();
+      const isSel   = d.toDateString() === selectedDay.toDateString();
+      const hasExam = (SPECIAL[dateStr(d)] || []).some(e => e.isExam);
+      const onBreak = isBreakWeek(d);
+      const hasBlocks = Object.keys(allPlacements[dateStr(d)] || {}).length > 0;
+
+      const cell = document.createElement('div');
+      cell.className = 'week-day'
+        + (isToday  ? ' today'    : '')
+        + (isSel    ? ' selected' : '')
+        + (hasExam  ? ' has-exam' : '');
+      cell.innerHTML = `
+        <div class="wd-name">${DAY_NAMES[d.getDay()]}</div>
+        <div class="wd-date">${d.getDate()}</div>
+        <div class="${onBreak ? 'wd-break' : (evts.filter(e=>!e.isSocial).length ? 'wd-busy' : 'wd-free')}">${onBreak ? 'break' : freeH+'h free'}</div>
+        ${hasExam   ? '<div class="wd-exam">EXAM</div>' : ''}
+        ${hasBlocks && !hasExam ? '<div class="wd-blocks">📌 planned</div>' : ''}
+      `;
+      cell.onclick = () => { selectedDay = new Date(d); renderAll(); };
+      weekEl.appendChild(cell);
+    }
+  }
+
+  // Timeline
+  function buildTimeline(date) {
+    const events = getAllEvents(); // always includes placed blocks for selectedDay
+    const el     = document.getElementById('timeline');
+    el.innerHTML = '';
+
+    // ── Resize handle logic ──
+    function addResizeHandle(evEl, durKey, origDur, isClass) {
+      const handle = document.createElement('div');
+      handle.className = 'tl-resize-handle';
+      evEl.appendChild(handle);
+
+      handle.addEventListener('mousedown', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startY  = e.clientY;
+        const slotH   = el.querySelector('.timeline-row')?.getBoundingClientRect().height || 38;
+        let lastDelta = 0;
+        evEl.classList.add('tl-resizing');
+
+        function onMove(ev) {
+          const deltaSlots = Math.round((ev.clientY - startY) / slotH);
+          if (deltaSlots === lastDelta) return;
+          lastDelta = deltaSlots;
+          const newDur = Math.max(30, origDur + deltaSlots * 30);
+          setDurOverride(selectedDay, durKey, newDur);
+          renderAll();
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          document.body.style.cursor = '';
+          renderAll();
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        document.body.style.cursor = 'ns-resize';
+      });
+    }
+
+    // Resolve CSS vars to real colors (for background tint)
+    function resolveColor(c) {
+      return c.replace('var(--math)','rgba(167,139,250,0.18)')
+               .replace('var(--mtrn)','rgba(248,113,113,0.18)')
+               .replace('var(--gene)','rgba(52,211,153,0.18)')
+               .replace('var(--red)', 'rgba(248,113,113,0.25)');
+    }
+    function hexAlpha(hex, a) {
+      // quick rgba from 6-char hex or named color for prep blocks
+      if (hex.startsWith('#') && hex.length === 7) {
+        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        return `rgba(${r},${g},${b},${a})`;
+      }
+      return hex;
+    }
+
+    // Group into 30-min slots, 8am–10pm
+    for (let h = DAY_START; h < DAY_END; h++) {
+      for (let half = 0; half < 2; half++) {
+        const slotStart = h * 60 + half * 30;
+        const slotEnd   = slotStart + 30;
+
+        const rowEl = document.createElement('div');
+        rowEl.className = 'timeline-row';
+        rowEl.dataset.slotStart = slotStart;
+
+        const timeEl = document.createElement('div');
+        timeEl.className = 'tl-time';
+        if (half === 0) timeEl.textContent = fmtMins(slotStart);
+        rowEl.appendChild(timeEl);
+
+        const blocksEl = document.createElement('div');
+        blocksEl.className = 'tl-blocks';
+
+        // Events in this slot
+        const inSlot      = events.filter(e => toMins(e.start) < slotEnd && toMins(e.end) > slotStart);
+        const classInSlot = inSlot.filter(e => !e.isPrep);
+        const prepInSlot  = inSlot.filter(e => e.isPrep);
+
+        if (inSlot.length === 0) {
+          const freeEl = document.createElement('div');
+          freeEl.className = 'tl-free';
+          freeEl.innerHTML = '<span class="tl-free-label">— free</span>';
+          blocksEl.appendChild(freeEl);
+        } else {
+          // Regular class events
+          classInSlot.forEach(ev => {
+            const evEl = document.createElement('div');
+            evEl.className = 'tl-class';
+            evEl.style.background = resolveColor(ev.color);
+            evEl.style.borderLeft = `3px solid ${ev.color}`;
+            if (toMins(ev.start) >= slotStart) {
+              evEl.innerHTML = `
+                <div>
+                  <div class="tl-class-name" style="color:${ev.color}">${ev.code}</div>
+                  <div class="tl-class-loc">${ev.name}</div>
+                </div>
+                <div class="tl-class-loc">${ev.loc}</div>
+              `;
+              evEl.draggable = true;
+              evEl.style.cursor = 'grab';
+              evEl.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', 'classblock|' + ev.code + '|' + ev.origStart);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => evEl.style.opacity = '0.4', 0);
+              });
+              evEl.addEventListener('dragend', () => { evEl.style.opacity = ''; });
+              const skipBtn = document.createElement('button');
+              skipBtn.className = 'tl-prep-remove';
+              skipBtn.title = 'Skip this class today';
+              skipBtn.textContent = '×';
+              skipBtn.onclick = () => { skipEvent(selectedDay, ev); renderAll(); };
+              evEl.appendChild(skipBtn);
+              const classDurKey = ev.code + '|' + ev.origStart;
+              const classCurDur = ev.overrideDur || (toMins(ev.end) - toMins(ev.start));
+              addResizeHandle(evEl, classDurKey, classCurDur, true);
+            } else {
+              evEl.innerHTML = `<div class="tl-class-loc" style="color:${ev.color}">↑ cont.</div>`;
+            }
+            blocksEl.appendChild(evEl);
+          });
+
+          // Prep block events
+          prepInSlot.forEach(ev => {
+            const isStart = toMins(ev.start) >= slotStart;
+            const evEl = document.createElement('div');
+            evEl.className = 'tl-prep' + (ev.isStudyTask ? ' tl-prep-study' : '');
+            evEl.style.background = hexAlpha(ev.color, ev.isStudyTask ? 0.10 : 0.15);
+            evEl.style.borderLeftColor = ev.color;
+            if (ev.isStudyTask) evEl.style.borderStyle = 'dashed';
+
+            if (isStart) {
+              const durLabel = ev.prepDur >= 60 ? (ev.prepDur/60)+'h' : ev.prepDur+'m';
+              const typeTag  = ev.isStudyTask
+                ? `<span style="font-size:0.62rem;font-weight:700;opacity:0.6;margin-left:4px;color:${ev.color}">STUDY</span>`
+                : '';
+              evEl.innerHTML = `
+                <div>
+                  <div class="tl-prep-name" style="color:${ev.color}">${ev.name}${typeTag} <span style="font-size:0.7rem;font-weight:400;opacity:0.7">${durLabel}</span></div>
+                </div>
+              `;
+              evEl.draggable = true;
+              evEl.style.cursor = 'grab';
+              evEl.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', ev.prepId);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => evEl.style.opacity = '0.4', 0);
+              });
+              evEl.addEventListener('dragend', () => { evEl.style.opacity = ''; });
+              const rmBtn = document.createElement('button');
+              rmBtn.className = 'tl-prep-remove';
+              rmBtn.title = 'Remove block';
+              rmBtn.textContent = '×';
+              rmBtn.onclick = () => { removePlacement(ev.prepId); renderAll(); };
+              evEl.appendChild(rmBtn);
+              addResizeHandle(evEl, ev.prepId, ev.prepDur, false);
+            } else {
+              evEl.innerHTML = `<div class="tl-class-loc" style="color:${ev.color}">↑ cont.</div>`;
+            }
+            blocksEl.appendChild(evEl);
+          });
+        }
+
+        // ── Drag-and-drop (any day) ──
+        rowEl.addEventListener('dragover', e => {
+          e.preventDefault();
+          const draggingClass = (e.dataTransfer.types || []).includes('text/plain');
+          const hasFixedClass = classInSlot.length > 0;
+          rowEl.classList.toggle('tl-drag-over',   true);
+          rowEl.classList.toggle('tl-drop-blocked', false);
+          e.dataTransfer.dropEffect = 'move';
+        });
+        rowEl.addEventListener('dragleave', () => {
+          rowEl.classList.remove('tl-drag-over', 'tl-drop-blocked');
+        });
+        rowEl.addEventListener('drop', e => {
+          e.preventDefault();
+          rowEl.classList.remove('tl-drag-over', 'tl-drop-blocked');
+          const data = e.dataTransfer.getData('text/plain');
+          if (!data) return;
+          if (data.startsWith('classblock|')) {
+            // Moving a lecture/class block
+            const [, code, origStart] = data.split('|');
+            const ev = { code, origStart };
+            setClassOverride(selectedDay, ev, slotStart);
+            renderAll();
+          } else {
+            // Moving a custom/prep block — don't drop on top of a fixed class
+            if (classInSlot.length > 0) return;
+            const block = getAllBlocks().find(b => b.id === data);
+            if (!block) return;
+            setPlacement(data, slotStart);
+            renderAll();
+          }
+        });
+
+        rowEl.appendChild(blocksEl);
+        el.appendChild(rowEl);
+
+        // Hour divider
+        if (half === 1 && h < DAY_END - 1) {
+          const div = document.createElement('div');
+          div.className = 'tl-divider';
+          el.appendChild(div);
+        }
+      }
+    }
+  }
+
+  // ── Auto-scroll while dragging near viewport edges ──
+  (function() {
+    let scrollRaf = null;
+    const EDGE = 100;   // px from top/bottom that triggers scroll
+    const MAX_SPEED = 18; // px per frame
+
+    function stopScroll() {
+      if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
+    }
+
+    function scrollStep(dy) {
+      window.scrollBy(0, dy);
+      scrollRaf = requestAnimationFrame(() => scrollStep(dy));
+    }
+
+    document.addEventListener('dragover', e => {
+      stopScroll();
+      const y = e.clientY;
+      const h = window.innerHeight;
+      let dy = 0;
+      if (y < EDGE)      dy = -MAX_SPEED * (1 - y / EDGE);
+      else if (y > h - EDGE) dy =  MAX_SPEED * (1 - (h - y) / EDGE);
+      if (dy !== 0) scrollStep(dy);
+    });
+
+    document.addEventListener('dragend',  stopScroll);
+    document.addEventListener('drop',     stopScroll);
+  })();
+
+  // ── Weekly Analysis Sidebar ──
+  function renderWeekAnalysis() {
+    const el = document.getElementById('weekAnalysis');
+    if (!el) return;
+
+    const DAY_SHORT = ['M','T','W','T','F','S','S'];
+    const DAY_LONG  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+    // Mon–Sun of current week
+    const weekDays = Array.from({length: 7}, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - ((today.getDay() + 6) % 7) + i);
+      return d;
+    });
+
+    // Data from localStorage
+    let studyLogs = [];
+    try { studyLogs = JSON.parse(localStorage.getItem('studylog_v1') || '[]'); } catch(e){}
+    let plannerSummary = {};
+    try { plannerSummary = JSON.parse(localStorage.getItem('planner_day_summary') || '{}'); } catch(e){}
+
+    // Per-day breakdown
+    const weekData = weekDays.map((d, i) => {
+      const ds       = dateStr(d);
+      const dp       = allPlacements[ds] || {};
+      const dayLogs  = studyLogs.filter(l => new Date(l.date).toDateString() === d.toDateString());
+      const studySecs = dayLogs.reduce((s, l) => s + (l.seconds || 0), 0);
+      const freeMins  = plannerSummary[ds]?.freeStudyMins ?? null;
+      const hadGym    = dp['gym']       != null;
+      const hadBfast  = dp['breakfast'] != null;
+      const hadLunch  = dp['lunch']     != null;
+      const funBlocks = customTasks.filter(t => t.type === 'fun' && dp[t.id] != null);
+      const socialEvts = (SPECIAL[ds] || []).filter(e => e.isSocial);
+      return { d, ds, i, dayName: DAY_SHORT[i], longName: DAY_LONG[i],
+               hadGym, hadBfast, hadLunch, studySecs, freeMins, funBlocks, socialEvts };
+    });
+
+    // Productivity
+    const totalStudySecs = weekData.reduce((s, d) => s + d.studySecs, 0);
+    const totalFreeMins  = weekData.reduce((s, d) => s + (d.freeMins ?? 0), 0);
+    const hasFreeMins    = weekData.some(d => d.freeMins !== null);
+    const prodPct = hasFreeMins && totalFreeMins > 0
+      ? Math.min(120, Math.round(totalStudySecs / 60 / totalFreeMins * 100)) : null;
+    const studyH  = (totalStudySecs / 3600).toFixed(1);
+    const pColor  = prodPct == null ? '#64748b'
+                  : prodPct >= 80  ? '#34d399'
+                  : prodPct >= 55  ? '#a78bfa'
+                  : prodPct >= 35  ? '#fb923c' : '#f87171';
+    const pVerdict = prodPct == null ? '' : prodPct >= 90 ? 'Locked in 🔥' : prodPct >= 70 ? 'Solid week 💪' : prodPct >= 40 ? 'Getting there' : 'Rough week 😴';
+
+    // Health
+    const gymDays   = weekData.filter(d => d.hadGym).length;
+    const bfastDays = weekData.filter(d => d.hadBfast).length;
+    const lunchDays = weekData.filter(d => d.hadLunch).length;
+    const healthPct = Math.round((gymDays + bfastDays + lunchDays) / 21 * 100);
+    const hColor    = healthPct >= 65 ? '#34d399' : healthPct >= 35 ? '#fb923c' : '#f87171';
+    const hVerdict  = healthPct >= 75 ? 'Thriving 🌟' : healthPct >= 50 ? 'Decent' : healthPct >= 25 ? 'Could be better' : 'Take care of yourself 🫶';
+
+    // Fun & Social
+    const allFun = weekData.flatMap(d => [
+      ...d.socialEvts.map(e => ({ emoji: e.code || '🎉', name: e.name, day: d.longName })),
+      ...d.funBlocks.map(b => ({ emoji: b.emoji, name: b.name, day: d.longName })),
+    ]);
+    const funVerdict = allFun.length === 0 ? 'All work, no play 📚'
+                     : allFun.length === 1 ? 'Touched grass once ✌️'
+                     : allFun.length <= 3  ? 'Good balance ⚖️'
+                     : 'Living your best life 🎉';
+
+    // Helpers
+    function dots(pred, onColor) {
+      return `<div class="wa-dots">${weekData.map(d =>
+        `<div class="wa-dot ${pred(d) ? 'on' : ''}" style="${pred(d) ? `background:${onColor}` : ''}" title="${d.longName}">${d.dayName}</div>`
+      ).join('')}</div>`;
+    }
+    function bar(pct, color) {
+      return `<div class="wa-bar-wrap"><div class="wa-bar" style="width:${Math.min(100,pct)}%;background:${color}"></div></div>`;
+    }
+
+    const weekStart = weekDays[0].toLocaleDateString(undefined, { month:'short', day:'numeric' });
+    const weekEnd   = weekDays[6].toLocaleDateString(undefined, { month:'short', day:'numeric' });
+
+    el.innerHTML = `<div class="wa-panel">
+      <div class="wa-header">📊 Week in Review</div>
+      <div class="wa-week-range">${weekStart} – ${weekEnd}</div>
+
+      <div class="wa-section">
+        <div class="wa-section-title">🎓 Productivity</div>
+        ${prodPct !== null ? `
+          <div class="wa-score-row">
+            <span class="wa-score" style="color:${pColor}">${prodPct}%</span>
+            <span class="wa-verdict">${pVerdict}</span>
+          </div>
+          ${bar(prodPct, pColor)}
+          <div class="wa-meta">${studyH}h of ${(totalFreeMins/60).toFixed(1)}h available</div>
+        ` : `<div class="wa-meta">${studyH}h studied this week</div>
+             <div class="wa-hint">Open each planner day to unlock % score</div>`}
+        <div class="wa-row-label" style="margin-top:0.55rem">Study days</div>
+        ${dots(d => d.studySecs > 0, '#7c6af7')}
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-title">💪 Health</div>
+        <div class="wa-score-row">
+          <span class="wa-health-score" style="color:${hColor}">${healthPct}%</span>
+          <span class="wa-verdict">${hVerdict}</span>
+        </div>
+        ${bar(healthPct, hColor)}
+        <div style="margin-top:0.55rem;display:flex;flex-direction:column;gap:0.45rem;">
+          <div>
+            <div class="wa-health-row"><span class="wa-health-label">🏋️ Gym</span><span class="wa-health-count">${gymDays}/7</span></div>
+            ${dots(d => d.hadGym, '#60a5fa')}
+          </div>
+          <div>
+            <div class="wa-health-row"><span class="wa-health-label">🌅 Breakfast</span><span class="wa-health-count">${bfastDays}/7</span></div>
+            ${dots(d => d.hadBfast, '#f59e0b')}
+          </div>
+          <div>
+            <div class="wa-health-row"><span class="wa-health-label">🍽️ Lunch</span><span class="wa-health-count">${lunchDays}/7</span></div>
+            ${dots(d => d.hadLunch, '#34d399')}
+          </div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-title">🎉 Social & Fun</div>
+        <div class="wa-fun-verdict">${funVerdict}</div>
+        ${allFun.length === 0
+          ? `<div class="wa-hint">Drag "other" type blocks onto days to track social activities & events</div>`
+          : `<div class="wa-fun-list">${allFun.map(f =>
+              `<div class="wa-fun-item">
+                <span>${f.emoji}</span>
+                <span style="flex:1">${f.name}</span>
+                <span class="wa-fun-day">${f.day}</span>
+               </div>`).join('')}</div>`}
+      </div>
+    </div>`;
+  }
+
+  // ── Initial render ──
+  renderAll();
+
+  // ── Lock In ──
+  function lockIn(endTime) {
+    localStorage.setItem('planner_lockUntil', endTime);
+    window.location.href = 'study-tracker.html';
+  }
+
+  // ── Quick subject fill ──
+  function fillSubject(subject) {
+    localStorage.setItem('planner_subject', subject);
+    window.location.href = 'study-tracker.html';
+  }
+
+  // ── Week day popup (simple alert for now) ──
+  function showDayPopup(date) {
+    const events = getSchedule(date);
+    const free = getFreeBlocks(events);
+    const name = date.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'short' });
+    if (!events.length) {
+      alert(`${name}\n\nNo classes — full day free!`);
+    } else {
+      const lines = events.map(e => `• ${e.code} ${fmtMins(toMins(e.start))}–${fmtMins(toMins(e.end))}`);
+      const freeLines = free.map(f => `  Free: ${fmtMins(f.s)}–${fmtMins(f.e)}`);
+      alert(`${name}\n\n${lines.join('\n')}\n\n${freeLines.join('\n')}`);
+    }
+  }
+</script>
+</body>
+</html>
