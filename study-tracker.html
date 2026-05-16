@@ -1,0 +1,2840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Study Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --accent: #7c6af7;
+      --accent2: #a78bfa;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --green: #34d399;
+      --red: #f87171;
+      --border: #2d3251;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+      transition: filter 0.4s ease;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 1.2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* --- Timer Card --- */
+    .big-timer {
+      font-size: 3.5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      letter-spacing: 0.04em;
+      margin: 0.5rem 0 1.2rem;
+    }
+
+    .subject-input {
+      width: 100%;
+      padding: 0.6rem 0.9rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .subject-input:focus { border-color: var(--accent); }
+
+    .btn-row { display: flex; gap: 0.6rem; }
+    .btn-row-2 { display: flex; gap: 0.6rem; margin-top: 0.5rem; }
+
+    button {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-start { background: var(--accent); color: #fff; }
+    .btn-pause { background: #fb923c; color: #fff; }
+    .btn-stop  { background: var(--red);    color: #fff; }
+    .btn-reset { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); flex: 0 0 auto; padding: 0.65rem 1rem; }
+
+    /* Duration picker */
+    .duration-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; }
+    .presets { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .preset-btn {
+      padding: 0.3rem 0.65rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.78rem;
+      border-radius: 6px;
+      cursor: pointer;
+      flex: none;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover { color: var(--accent2); border-color: var(--accent); }
+    .preset-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .custom-dur { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+    .custom-dur input {
+      width: 54px; padding: 0.3rem 0.5rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 0.85rem;
+      text-align: center; outline: none;
+    }
+    .custom-dur input:focus { border-color: var(--accent); }
+    .custom-dur span { font-size: 0.8rem; color: var(--muted); }
+
+    /* Progress bar */
+    .progress-wrap { width: 100%; height: 5px; background: var(--surface2); border-radius: 99px; margin-bottom: 1.2rem; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; width: 0%; transition: width 1s linear; }
+
+    /* --- Stats Card --- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .stat {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-val { font-size: 1.6rem; font-weight: 700; color: var(--accent2); }
+    .stat-lbl { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+    .stat-lockin { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.75rem; }
+    .stat-lockin-times { font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: 0.02em; }
+    .lockin-badge {
+      font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.6rem;
+      border-radius: 99px; background: rgba(52,211,153,0.15);
+      color: var(--green); white-space: nowrap; letter-spacing: 0.04em;
+    }
+    .lockin-badge.done { background: rgba(124,106,247,0.15); color: var(--accent2); }
+
+    /* ── Idle warning banner ── */
+    /* ── Analysis panel ── */
+    .log-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .log-list-wrap { flex: 1; min-width: 0; }
+    .analysis-panel {
+      width: 260px; flex-shrink: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      position: sticky; top: 1rem;
+      animation: fadeIn 0.2s ease;
+    }
+    .ap-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+                letter-spacing: 0.07em; color: var(--accent2); margin-bottom: 0.75rem; }
+    .ap-day { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+    .ap-row { display: flex; justify-content: space-between; align-items: baseline;
+              font-size: 0.82rem; padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
+    .ap-row:last-of-type { border-bottom: none; }
+    .ap-label { color: var(--muted); }
+    .ap-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .ap-bar-wrap { margin: 0.9rem 0 0.4rem; height: 8px; background: var(--border);
+                   border-radius: 99px; overflow: hidden; }
+    .ap-bar { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+    .ap-score { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.1rem; }
+    .ap-score-label { font-size: 0.72rem; color: var(--muted); }
+    .ap-no-planner { font-size: 0.76rem; color: var(--muted); margin-top: 0.6rem;
+                     background: var(--surface); border-radius: 8px; padding: 0.5rem 0.7rem; }
+    .lg-analyse-btn {
+      margin-left: auto; margin-right: 0;
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 5px;
+      font-size: 0.58rem; padding: 0.08rem 0.35rem;
+      cursor: pointer; white-space: nowrap; transition: all 0.15s;
+      line-height: 1.4;
+    }
+    .lg-analyse-btn:hover, .lg-analyse-btn.active { border-color: var(--accent2); color: var(--accent2); }
+
+    /* --- Log Card --- */
+    .log-card { grid-column: 1 / -1; }
+
+    /* ---- Deadlines card ---- */
+    .deadlines-card { grid-column: 1 / -1; }
+    .deadlines-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 340px; overflow-y: auto; }
+    .deadlines-list::-webkit-scrollbar { width: 5px; }
+    .deadlines-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .dl-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      background: var(--surface2); border-radius: 10px;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+      border-left: 3px solid transparent;
+    }
+    .dl-item:hover { background: #2a2f45; transform: translateX(2px); }
+    .dl-item.urgent   { border-left-color: var(--red); }
+    .dl-item.soon     { border-left-color: #fb923c; }
+    .dl-item.upcoming { border-left-color: var(--accent); }
+    .dl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dl-dot.urgent   { background: var(--red); }
+    .dl-dot.soon     { background: #fb923c; }
+    .dl-dot.upcoming { background: var(--accent); }
+    .dl-name { flex: 1; font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .dl-subject { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+    .dl-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; flex-shrink: 0; }
+    .dl-due { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+    .dl-badge {
+      font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.5rem;
+      border-radius: 99px; white-space: nowrap;
+    }
+    .dl-badge.urgent   { background: rgba(248,113,113,0.15); color: var(--red); }
+    .dl-badge.soon     { background: rgba(251,146,60,0.15);  color: #fb923c; }
+    .dl-badge.upcoming { background: rgba(124,106,247,0.15); color: var(--accent2); }
+    .dl-weight { font-size: 0.68rem; background: rgba(52,211,153,0.12); color: var(--green); padding: 0.15rem 0.45rem; border-radius: 99px; }
+    .dl-study-tip { font-size: 0.72rem; color: var(--muted); font-style: italic; padding: 0.4rem 0 0.1rem; text-align: center; }
+    .dl-tick-btn {
+      background: none; border: 1px solid transparent; border-radius: 4px;
+      flex: 0 0 auto; cursor: pointer; color: transparent;
+      font-size: 0.6rem; padding: 0.15rem 0.4rem; line-height: 1;
+      align-self: center;
+      transition: color 0.15s, border-color 0.15s; opacity: 0;
+    }
+    .dl-item:hover .dl-tick-btn { opacity: 0.35; border-color: var(--border); color: var(--muted); }
+    .dl-tick-btn:hover { opacity: 1 !important; border-color: var(--green) !important; color: var(--green) !important; }
+    .dl-completed-header {
+      font-size: 0.72rem; color: var(--muted); opacity: 0.5;
+      margin-top: 0.75rem; margin-bottom: 0.35rem; padding-left: 0.25rem;
+    }
+    .dl-item.completed { opacity: 0.38; border-left-color: transparent; cursor: default; pointer-events: none; }
+    .dl-item.completed .dl-name { text-decoration: line-through; }
+    .dl-restore-btn {
+      background: none; border: none; cursor: pointer; pointer-events: all;
+      color: transparent; font-size: 0.7rem; padding: 0.1rem 0.3rem;
+      transition: color 0.15s; opacity: 0;
+    }
+    .dl-item.completed:hover { opacity: 0.6; pointer-events: all; }
+    .dl-item.completed:hover .dl-restore-btn { opacity: 1; color: var(--muted); }
+
+    /* ---- Todos card ---- */
+    .todo-add-row {
+      display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;
+    }
+    .todo-input {
+      flex: 2; min-width: 0; padding: 0.5rem 0.75rem;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 0.88rem; outline: none; transition: border-color 0.15s;
+    }
+    .todo-input:focus { border-color: var(--accent); }
+    .todo-subject-input {
+      flex: 1; min-width: 80px; padding: 0.5rem 0.75rem;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); font-size: 0.82rem; outline: none; transition: border-color 0.15s;
+    }
+    .todo-subject-input:focus { border-color: var(--accent); color: var(--text); }
+    .todo-add-btn {
+      padding: 0.5rem 1rem; background: var(--accent); color: #fff;
+      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s, transform 0.1s; white-space: nowrap;
+    }
+    .todo-add-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+    .todo-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      background: var(--surface2); border-radius: 10px;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+      border-left: 3px solid var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .todo-item:last-child { margin-bottom: 0; }
+    .todo-item:hover { background: #2a2f45; transform: translateX(2px); }
+    .todo-item.done { border-left-color: var(--muted); opacity: 0.6; }
+    .todo-check {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--accent); background: transparent;
+      color: var(--accent); font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s; padding: 0; line-height: 1;
+    }
+    .todo-check:hover { background: rgba(124,106,247,0.15); }
+    .todo-check.checked { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .todo-item.done .todo-check { border-color: var(--muted); background: var(--muted); color: var(--bg); }
+    .todo-text {
+      font-size: 0.9rem; font-weight: 600; color: var(--text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .todo-item.done .todo-text { text-decoration: line-through; color: var(--muted); }
+    .todo-tag { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+    .todo-del {
+      width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
+      border: none; background: transparent; color: var(--muted);
+      font-size: 1.1rem; cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s; padding: 0;
+    }
+    .todo-del:hover { background: rgba(248,113,113,0.15); color: var(--red); }
+
+    .log-list { list-style: none; max-height: 320px; overflow-y: auto; }
+    .log-list::-webkit-scrollbar { width: 5px; }
+    .log-list::-webkit-scrollbar-track { background: transparent; }
+    .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn 0.3s ease;
+    }
+    .log-item:last-child { border-bottom: none; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
+
+    .log-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+    .log-subject { font-weight: 600; font-size: 0.95rem; flex: 1; }
+    .log-duration {
+      font-size: 0.85rem;
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      color: var(--accent2);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .log-date  { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+    .log-total { font-size: 0.75rem; color: var(--muted); white-space: nowrap; border-left: 1px solid var(--border); padding-left: 0.5rem; }
+
+    /* ── Day group dropdowns ── */
+    .log-group { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .log-group + .log-group { margin-top: 0.5rem; }
+    .log-group summary {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 0.9rem;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      background: var(--surface2);
+    }
+    .log-group summary::-webkit-details-marker { display: none; }
+    .log-group[open] summary { border-bottom: 1px solid var(--border); }
+    .lg-chevron { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s; margin-left: auto; }
+    .log-group[open] .lg-chevron { transform: rotate(90deg); }
+    .lg-day { font-weight: 700; font-size: 0.88rem; }
+    .lg-today { color: var(--green); }
+    .lg-meta { font-size: 0.76rem; color: var(--muted); }
+    .lg-total { font-size: 0.76rem; color: var(--accent2); font-weight: 600; margin-left: auto; margin-right: 0.4rem; }
+    .log-group-items { padding: 0 0.9rem; }
+    .log-item:last-child { border-bottom: none; }
+    .log-del {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      flex: 0 0 auto;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .log-del:hover { color: var(--red); }
+
+    /* Session report button */
+    .log-report-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 5px;
+      font-size: 0.58rem; padding: 0.08rem 0.35rem;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.15s; flex-shrink: 0; line-height: 1.4;
+    }
+    .log-report-btn:hover   { border-color: var(--accent); color: var(--accent); }
+    .log-report-btn.has-report { border-color: var(--green); color: var(--green); }
+
+    /* Session report modal */
+    .sr-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; padding: 1rem;
+    }
+    .sr-modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.5rem; width: 100%; max-width: 480px;
+      animation: srIn 0.2s ease;
+    }
+    @keyframes srIn { from { opacity:0; transform:scale(0.95) translateY(8px); } to { opacity:1; transform:none; } }
+    .sr-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+    .sr-title  { font-size: 1rem; font-weight: 700; }
+    .sr-meta   { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+    .sr-close  { background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; line-height: 1; }
+    .sr-close:hover { color: var(--text); }
+    .sr-section { margin-bottom: 1rem; }
+    .sr-label  { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+                 color: var(--accent2); margin-bottom: 0.4rem; }
+    .sr-textarea {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 0.88rem;
+      font-family: inherit; padding: 0.65rem 0.8rem; resize: vertical;
+      min-height: 80px; outline: none; transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+    #srLearnings { min-height: 140px; }
+    .sr-textarea:focus { border-color: var(--accent); }
+    .sr-textarea::placeholder { color: var(--muted); }
+    .sr-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1.1rem; }
+    .sr-view {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.65rem 0.8rem; font-size: 0.87rem;
+      line-height: 1.6; white-space: pre-wrap; color: var(--text);
+      min-height: 40px;
+    }
+    .sr-view-empty { color: var(--muted); font-style: italic; }
+    .sr-edit-btn {
+      background: none; border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); font-size: 0.78rem; padding: 0.25rem 0.7rem;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .sr-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sr-save {
+      padding: 0.42rem 1.1rem; border-radius: 8px; font-size: 0.85rem;
+      font-weight: 700; background: var(--accent); color: #fff;
+      border: none; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-sr-save:hover { opacity: 0.85; }
+    .btn-sr-cancel {
+      padding: 0.42rem 1rem; border-radius: 8px; font-size: 0.85rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+    }
+
+    .empty-msg { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 2rem 0; }
+
+    /* Lock-in report entries */
+    .report-entry {
+      padding: 0.9rem 0;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn 0.3s ease;
+    }
+    .report-entry:last-child { border-bottom: none; }
+    .re-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .re-window { font-weight: 600; font-size: 0.95rem; }
+    .re-date   { font-size: 0.78rem; color: var(--muted); }
+    .re-stats  { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .re-stat   { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; }
+    .re-stat-val { font-weight: 700; }
+    .re-bar-wrap { height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin: 0.5rem 0 0; display: flex; }
+    .re-del { background: none; border: none; color: var(--muted); font-size: 0.9rem; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    .re-del:hover { color: var(--red); }
+
+    .log-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      flex: none;
+    }
+    .clear-btn:hover { color: var(--red); border-color: var(--red); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+    .btn-float  { background: var(--surface2); color: var(--accent2); border: 1px solid var(--border); padding: 0.55rem 1rem; font-size: 0.82rem; }
+    .btn-lunch  { background: var(--surface2); color: #fb923c; border: 1px solid #fb923c44; padding: 0.55rem 1rem; font-size: 0.82rem; flex: 1; }
+    .btn-lunch:hover { background: #fb923c22; }
+    .btn-lunch.active { background: #fb923c22; color: #fb923c; }
+    .btn-break  { background: var(--surface2); color: #60a5fa; border: 1px solid #60a5fa44; padding: 0.55rem 1rem; font-size: 0.82rem; flex: 1; }
+    .btn-break:hover { background: #60a5fa18; }
+    .btn-break.active { background: #60a5fa18; color: #60a5fa; }
+    .btn-lockin { background: var(--surface2); color: #a78bfa; border: 1px solid #a78bfa44; padding: 0.55rem 1rem; font-size: 0.82rem; flex: 1; }
+    .btn-lockin:hover { background: #a78bfa18; }
+    .btn-lockin.active { background: #a78bfa22; color: #a78bfa; border-color: #a78bfa99; }
+
+    .lunch-bar, .break-bar {
+      display: none; align-items: center; gap: 0.75rem;
+      border-radius: 10px; padding: 0.6rem 1rem; margin-top: 0.75rem;
+    }
+    .lunch-bar { background: #fb923c14; border: 1px solid #fb923c33; }
+    .break-bar { background: #60a5fa12; border: 1px solid #60a5fa33; }
+    .lunch-bar.visible, .break-bar.visible { display: flex; }
+    #wastedBar {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin-top: 0.6rem; padding: 0.6rem 1rem;
+      background: #3b000a; border: 1px solid #f43f5e88;
+      border-radius: 10px; animation: wastePulse 1.8s ease-in-out infinite;
+    }
+    @keyframes wastePulse { 0%,100%{border-color:#f43f5e88} 50%{border-color:#f43f5ecc} }
+    #wastedLabel { font-size: 0.82rem; color: #f43f5e; font-weight: 700; flex: 1; letter-spacing: 0.03em; }
+    #wastedTime  { font-size: 1.05rem; font-weight: 800; color: #f43f5e; font-variant-numeric: tabular-nums; }
+    .break-presets { display: flex; gap: 0.4rem; }
+    .break-preset { padding: 0.25rem 0.7rem; border-radius: 6px; background: var(--surface2); border: 1px solid #60a5fa55; color: #60a5fa; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+    .break-preset:hover { background: #60a5fa22; }
+    .lunch-icon { font-size: 1.1rem; }
+    .lunch-label { font-size: 0.8rem; color: #fb923c; font-weight: 600; flex: 1; }
+    .lunch-time  { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #fb923c; }
+    .lunch-cancel { background: none; border: none; color: var(--muted); font-size: 0.75rem; cursor: pointer; padding: 0; flex: none; }
+    .lunch-cancel:hover { color: var(--red); }
+
+    /* ======================== STUDY GOAL CARD ======================== */
+    .goal-card { grid-column: 1 / -1; }
+    .goal-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .goal-label { font-size: 0.9rem; color: var(--muted); }
+    .time-input {
+      padding: 0.5rem 0.75rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.95rem;
+      outline: none; cursor: pointer;
+    }
+    .time-input:focus { border-color: var(--accent); }
+    .time-input::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+    .btn-goal-set {
+      padding: 0.5rem 1.2rem; background: var(--accent); color: #fff;
+      border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      flex: none;
+    }
+    .btn-goal-set:hover { opacity: 0.85; }
+    .btn-goal-end {
+      padding: 0.5rem 1rem; background: none; color: var(--accent2);
+      border: 1px solid var(--accent); border-radius: 8px; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; flex: none;
+    }
+    .btn-goal-end:hover { background: var(--accent); color: #fff; }
+    .goal-status {
+      margin-top: 0.85rem; padding: 0.7rem 1rem;
+      background: var(--surface2); border-radius: 10px;
+      font-size: 0.88rem; color: var(--accent2);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .goal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+                animation: pulse 1.2s infinite; flex-shrink: 0; }
+
+    /* ======================== REPORT MODAL ======================== */
+    .report-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px); z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .report-inner {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2rem; max-width: 400px; width: 90%;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5); animation: fadeIn 0.3s ease;
+    }
+    .report-title { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+    .report-window { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.4rem; }
+    .report-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1.2rem; }
+    .report-stat { background: var(--surface2); border-radius: 10px; padding: 0.9rem; text-align: center; }
+    .report-stat-val { font-size: 1.4rem; font-weight: 700; }
+    .report-stat-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+    .rg { color: var(--green); } .ro { color: #fb923c; } .rp { color: var(--accent2); }
+    .report-bar-wrap { display: flex; height: 8px; border-radius: 99px; overflow: hidden; margin-bottom: 0.4rem; }
+    .report-bar-study { background: var(--green); transition: width 0.6s ease; }
+    .report-bar-break { background: #fb923c; flex: 1; }
+    .report-bar-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 1.4rem; }
+    .report-close { width: 100%; padding: 0.7rem; background: var(--accent); color: #fff;
+                    border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    .report-close:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+
+<!-- Session complete overlay -->
+<div id="completeOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#0a1a0d;
+  display:none;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;">
+  <style>
+    #completeOverlay .trees{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:flex-end;
+           justify-content:space-around;pointer-events:none;padding:0 2rem;}
+    #completeOverlay .tree{display:flex;flex-direction:column;align-items:center;
+          animation:csway 4s ease-in-out infinite;transform-origin:bottom center;}
+    #completeOverlay .tree:nth-child(2){animation-delay:.7s;}
+    #completeOverlay .tree:nth-child(3){animation-delay:1.3s;}
+    #completeOverlay .tree:nth-child(4){animation-delay:.4s;}
+    #completeOverlay .tree:nth-child(5){animation-delay:1.0s;}
+    #completeOverlay .tree:nth-child(6){animation-delay:.2s;}
+    #completeOverlay .tree:nth-child(7){animation-delay:1.6s;}
+    @keyframes csway{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg)}}
+    #completeOverlay .crown{font-size:var(--sz);line-height:1;}
+    #completeOverlay .trunk{width:7px;height:var(--th);background:#4a3018;border-radius:2px;}
+    #completeOverlay .cmoon{position:fixed;top:6%;right:8%;font-size:2.5rem;opacity:0.5;pointer-events:none;}
+    #completeOverlay .ccontent{position:relative;z-index:2;display:flex;flex-direction:column;
+                align-items:center;width:min(480px,82%);margin-bottom:10vh;gap:0.8rem;}
+    #completeOverlay .ctick{font-size:3.5rem;}
+    #completeOverlay .csubj{font-size:1.5rem;font-weight:800;color:#4ade80;letter-spacing:0.04em;}
+    #completeOverlay .crange{font-size:0.85rem;color:#86efac;opacity:0.6;}
+    #completeOverlay .cta{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(74,222,128,0.2);
+        border-radius:12px;color:#bbf7d0;font-family:inherit;font-size:0.95rem;
+        padding:0.85rem 1rem;resize:none;outline:none;line-height:1.5;margin-top:0.4rem;}
+    #completeOverlay .cta:focus{border-color:rgba(74,222,128,0.55);}
+    #completeOverlay .cta::placeholder{color:rgba(134,239,172,0.28);}
+    #completeOverlay .cbtns{display:flex;gap:0.6rem;width:100%;}
+    #completeOverlay .csave{flex:1;background:#15803d;color:#fff;border:none;border-radius:11px;
+          padding:0.85rem;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.15s;}
+    #completeOverlay .csave:hover{background:#16a34a;}
+    #completeOverlay .cskip{background:transparent;color:#86efac;border:1px solid rgba(74,222,128,0.2);
+          border-radius:11px;padding:0.85rem 1.4rem;font-size:0.9rem;cursor:pointer;font-family:inherit;}
+    #completeOverlay .chint{font-size:0.7rem;color:#86efac;opacity:0.3;}
+  </style>
+  <div class="cmoon">🌙</div>
+  <div class="ccontent">
+    <div class="ctick">✅</div>
+    <div class="csubj" id="cSubj"></div>
+    <div class="crange" id="cRange"></div>
+    <textarea class="cta" id="cNote" rows="5" placeholder="What did you get done this session?"></textarea>
+    <div class="cbtns">
+      <button class="csave" onclick="completeOverlaySave()">💾 Save report</button>
+      <button class="cskip" onclick="completeOverlayClose()">Skip</button>
+    </div>
+    <div class="chint">Ctrl+Enter to save</div>
+  </div>
+  <div class="trees">
+    <div class="tree" style="--sz:2.8rem;--th:22px"><div class="crown">🌲</div><div class="trunk"></div></div>
+    <div class="tree" style="--sz:4rem;--th:32px"><div class="crown">🌳</div><div class="trunk"></div></div>
+    <div class="tree" style="--sz:2.4rem;--th:18px"><div class="crown">🌲</div><div class="trunk"></div></div>
+    <div class="tree" style="--sz:4.5rem;--th:36px"><div class="crown">🌳</div><div class="trunk"></div></div>
+    <div class="tree" style="--sz:3rem;--th:24px"><div class="crown">🌲</div><div class="trunk"></div></div>
+    <div class="tree" style="--sz:3.8rem;--th:30px"><div class="crown">🌳</div><div class="trunk"></div></div>
+    <div class="tree" style="--sz:2.6rem;--th:20px"><div class="crown">🌲</div><div class="trunk"></div></div>
+  </div>
+</div>
+
+<nav style="max-width:960px;margin:0 auto 1.5rem;display:flex;gap:0.5rem;align-items:center">
+  <a href="study-tracker.html" style="padding:0.45rem 1rem;border-radius:8px;font-size:0.85rem;font-weight:600;text-decoration:none;background:var(--surface);color:var(--accent2);border:1px solid var(--border);">⏱ Tracker</a>
+  <span style="color:var(--border)">|</span>
+  <a href="study-planner.html" style="padding:0.45rem 1rem;border-radius:8px;font-size:0.85rem;font-weight:600;text-decoration:none;color:var(--muted);border:1px solid transparent;">📅 Planner</a>
+  <span style="color:var(--border)">|</span>
+  <a href="study-actionables.html" style="padding:0.45rem 1rem;border-radius:8px;font-size:0.85rem;font-weight:600;text-decoration:none;color:var(--muted);border:1px solid transparent;">✅ Actionables</a>
+  <span style="flex:1"></span>
+  <button onclick="endDayNow()" style="padding:0.4rem 0.9rem;border-radius:8px;font-size:0.82rem;font-weight:600;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25);cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(248,113,113,0.22)'" onmouseout="this.style.background='rgba(248,113,113,0.12)'">🌙 End Day</button>
+  <button onclick="openSettings()" style="padding:0.4rem 0.9rem;border-radius:8px;font-size:0.82rem;font-weight:600;background:var(--surface);color:var(--muted);border:1px solid var(--border);cursor:pointer;transition:background 0.15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">⚙ Settings</button>
+</nav>
+
+<div style="max-width:960px;margin:0 auto">
+  <h1>Study Tracker</h1>
+  <p class="subtitle">Track your sessions, stay consistent.</p>
+
+  <div class="grid">
+
+    <!-- Timer -->
+    <div class="card">
+      <h2>Session Countdown</h2>
+      <div class="big-timer" id="display">00:30:00</div>
+      <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="duration-row">
+        <div class="presets">
+          <button class="preset-btn" onclick="setDuration(20)">20m</button>
+          <button class="preset-btn active" onclick="setDuration(30)">30m</button>
+          <button class="preset-btn" onclick="setDuration(40)">40m</button>
+          <button class="preset-btn" onclick="setDuration(50)">50m</button>
+        </div>
+        <div class="custom-dur">
+          <input type="number" id="durInput" min="1" max="480" value="30" onchange="setDuration(+this.value)"/>
+          <span>min</span>
+        </div>
+      </div>
+      <input class="subject-input" id="subjectInput" type="text" placeholder="Subject / topic (e.g. Maths)" maxlength="40"/>
+      <div class="btn-row">
+        <button class="btn-start" id="startBtn" onclick="startTimer()">Start</button>
+        <button class="btn-pause" id="pauseBtn" onclick="pauseTimer()" disabled>Pause</button>
+        <button class="btn-stop"  id="stopBtn"  onclick="stopTimer()" disabled>Stop & Save</button>
+        <button class="btn-reset" onclick="resetTimer()">Reset</button>
+      </div>
+      <div class="btn-row-2">
+        <button class="btn-break" id="breakBtn" onclick="toggleBreak()" title="Start a short break">☕ Break</button>
+        <button class="btn-lockin" id="lockInBtn" onclick="toggleLockIn()" title="Start a lock-in study session">🔒 Lock In</button>
+        <button class="btn-float" onclick="popoutTimer()" title="Float on top of all windows" style="margin-left:auto">⊞ Float</button>
+        <button onclick="resetBreakBank()" title="Reset break bank & wasted time to zero" style="background:transparent;border:1px solid rgba(244,63,94,0.3);color:#f43f5e;border-radius:8px;padding:0.4rem 0.7rem;font-size:0.78rem;font-weight:600;cursor:pointer;">↺ Reset Bank</button>
+      </div>
+      <div class="break-bar" id="breakBar">
+        <span style="font-size:1.1rem">☕</span>
+        <span style="font-size:0.8rem;color:#60a5fa;font-weight:600;flex:1" id="breakLabel">Break</span>
+        <span class="lunch-time" style="color:#60a5fa;display:none" id="breakTime">10:00</span>
+        <button class="lunch-cancel" onclick="endBreak(true)" style="display:none" id="breakCancelBtn">✕ Done early</button>
+        <button class="lunch-cancel" onclick="endSessionEarly()" style="display:none;color:#f43f5e;border-color:#f43f5e44" id="breakEndLockInBtn">⛔ End Lock-In</button>
+      </div>
+
+      <div class="lunch-bar" id="lunchBar">
+        <span class="lunch-icon">🍴</span>
+        <span class="lunch-label">Lunch break</span>
+        <span class="lunch-time" id="lunchTime">60:00</span>
+        <button class="lunch-cancel" onclick="endLunch(true)">✕ Done early</button>
+      </div>
+
+      <!-- ratio inputs live in settings modal -->
+
+      <div id="wastedBar" style="display:none">
+        <span id="wastedIcon">⚠️</span>
+        <span id="wastedLabel">Wasted time</span>
+        <span id="wastedTime">0:00</span>
+        <button onclick="resetBreakBank()" title="Reset wasted time & break bank to zero" style="margin-left:auto;background:transparent;border:1px solid rgba(244,63,94,0.3);color:#f43f5e;border-radius:6px;padding:0.1rem 0.5rem;font-size:0.7rem;cursor:pointer;opacity:0.7;">reset</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <h2>Stats</h2>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-val" id="statTotal">0h 0m</div>
+          <div class="stat-lbl">Total Today</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statSessions">0</div>
+          <div class="stat-lbl">Sessions Today</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statWeek">0h 0m</div>
+          <div class="stat-lbl">This Week</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statAvg">0m</div>
+          <div class="stat-lbl">Avg Session</div>
+        </div>
+        <div class="stat stat-lockin" id="statLockinWrap" style="display:none">
+          <div style="flex:1">
+            <div class="stat-lockin-times" id="statLockinTimes">—</div>
+            <div class="stat-lbl" style="margin-top:0.3rem">Lock-in Session</div>
+          </div>
+          <div class="lockin-badge" id="statLockinBadge">● Live</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Todos -->
+    <div class="card deadlines-card">
+      <div class="log-header" style="margin-bottom:0.75rem">
+        <h2 style="margin-bottom:0">📝 Todos</h2>
+        <span style="font-size:0.75rem;color:var(--muted)">Click to work on it →</span>
+      </div>
+      <div class="todo-add-row">
+        <input id="todoInput" class="todo-input" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTodo()">
+        <input id="todoSubjectInput" class="todo-subject-input" placeholder="Subject (optional)" onkeydown="if(event.key==='Enter')addTodo()">
+        <button class="todo-add-btn" onclick="addTodo()">+ Add</button>
+      </div>
+      <div id="todoList"></div>
+    </div>
+
+    <!-- Upcoming Deadlines -->
+    <div class="card deadlines-card">
+      <div class="log-header">
+        <h2 style="margin-bottom:0">Upcoming Deadlines</h2>
+        <span style="font-size:0.75rem;color:var(--muted)">Click to study for it →</span>
+      </div>
+      <div class="deadlines-list" id="deadlinesList"></div>
+    </div>
+
+
+    <!-- Log -->
+    <div class="card log-card">
+      <div class="log-header">
+        <h2 style="margin-bottom:0">Session Log</h2>
+        <button class="clear-btn" onclick="clearAll()">Clear all</button>
+      </div>
+      <div class="log-layout">
+        <ul class="log-list log-list-wrap" id="logList"></ul>
+        <div class="analysis-panel" id="analysisPanel" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- Lock-in Reports -->
+    <div class="card log-card" id="reportsCard" style="display:none">
+      <div class="log-header">
+        <h2 style="margin-bottom:0">Lock-in Reports</h2>
+        <button class="clear-btn" onclick="clearReports()">Clear all</button>
+      </div>
+      <div id="reportsList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;width:min(520px,92vw);max-height:88vh;overflow-y:auto;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem">
+      <h2 style="margin:0;font-size:1.15rem">⚙ Settings</h2>
+      <button onclick="closeSettings()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:0.2rem 0.4rem;border-radius:6px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">✕</button>
+    </div>
+
+    <!-- Day Reset -->
+    <div style="margin-bottom:1.75rem">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.85rem">Day Reset</div>
+      <p style="font-size:0.83rem;color:var(--muted);margin:0 0 1rem">Today's stats and break bank reset when you click <strong style="color:var(--text)">End Day</strong>. You can also set a time for it to auto-reset each day.</p>
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+        <label style="font-size:0.85rem;color:var(--text);font-weight:600">Auto-reset time</label>
+        <input type="time" id="autoResetTime" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.35rem 0.65rem;font-size:0.85rem;outline:none" onchange="saveAutoReset()"/>
+        <button onclick="clearAutoReset()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:0.78rem;padding:0.3rem 0.7rem;cursor:pointer">Clear</button>
+      </div>
+      <p id="autoResetHint" style="font-size:0.75rem;color:var(--muted);margin:0.6rem 0 0"></p>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin-bottom:1.75rem"></div>
+
+    <!-- Productivity Ratio -->
+    <div>
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.85rem">Productivity Ratio</div>
+      <p style="font-size:0.83rem;color:var(--muted);margin:0 0 1rem">How much break time you earn per study time. e.g. 25 min study → 5 min break.</p>
+      <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap">
+        <input id="ratioStudyInput" type="number" min="1" max="480" value="3" style="width:56px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.35rem 0.5rem;font-size:0.9rem;text-align:center;outline:none"/>
+        <span style="color:var(--muted);font-size:0.85rem">min study</span>
+        <span style="color:var(--border)">→</span>
+        <input id="ratioBreakInput" type="number" min="1" max="120" value="1" style="width:56px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.35rem 0.5rem;font-size:0.9rem;text-align:center;outline:none"/>
+        <span style="color:var(--muted);font-size:0.85rem">min break</span>
+        <button onclick="applyFromRatio()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0.35rem 0.9rem;font-size:0.82rem;font-weight:600;cursor:pointer">Apply</button>
+      </div>
+      <p id="ratioLabel" style="font-size:0.78rem;color:var(--accent2);font-weight:600;margin:0.65rem 0 0"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div id="reportModal" class="report-modal" style="display:none">
+  <div class="report-inner">
+    <div class="report-title">Session Complete 🎉</div>
+    <div class="report-window" id="reportWindow"></div>
+    <div class="report-stats">
+      <div class="report-stat">
+        <div class="report-stat-val rg" id="reportStudied">—</div>
+        <div class="report-stat-lbl">Studied</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-val" style="color:#fb923c" id="reportLunch">—</div>
+        <div class="report-stat-lbl">Lunch</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-val ro" id="reportBreak">—</div>
+        <div class="report-stat-lbl">Idle Break</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-val rp" id="reportSessions">—</div>
+        <div class="report-stat-lbl">Sessions</div>
+      </div>
+    </div>
+    <div class="report-bar-wrap">
+      <div class="report-bar-study" id="reportBarStudy"></div>
+      <div id="reportBarLunch" style="background:#fb923c;transition:width 0.6s ease;"></div>
+      <div class="report-bar-break"></div>
+    </div>
+    <div class="report-bar-labels">
+      <span>■ Study</span><span style="color:#fb923c">■ Lunch</span><span>■ Idle break</span>
+    </div>
+    <button class="report-close" onclick="closeReport()">Nice work — close</button>
+  </div>
+</div>
+
+<script>
+  // ---- State ----
+  let durationSecs  = 30 * 60;       // total session length in seconds
+  let remaining     = durationSecs;  // seconds left (display value)
+  let running       = false;
+  let timerInterval = null;
+  let popoutWin     = null;
+  let completeWin   = null;
+  let pauseNotifInterval = null;
+
+  function showPausePopup() {
+    document.title = '⏸ PAUSED — Study Tracker';
+    if ('Notification' in window && Notification.permission === 'granted') {
+      clearInterval(pauseNotifInterval);
+      pauseNotifInterval = setInterval(() => {
+        if (pauseStartMs) {
+          const secs = Math.floor((Date.now() - pauseStartMs) / 1000);
+          const m = Math.floor(secs / 60), s = secs % 60;
+          new Notification('⏸ Still paused!', {
+            body: `You've been on pause for ${m}:${String(s).padStart(2,'0')} — timer is waiting.`,
+            silent: true
+          });
+        }
+      }, 5 * 60 * 1000);
+    }
+  }
+
+  function showCompleteInPip(subject, timeRange) {
+    // Flash the always-on-top PiP to grab attention, clicking it focuses the tracker overlay
+    if (popoutWin && !popoutWin.closed) {
+      try {
+        const d = popoutWin.document;
+        const style = d.createElement('style');
+        style.textContent = `
+          @keyframes donePulse{0%,100%{background:#0a2e12}50%{background:#14532d}}
+          body{animation:donePulse 1s ease-in-out infinite!important;cursor:pointer!important;}
+          #doneMsg{display:flex!important;}
+        `;
+        d.head.appendChild(style);
+        d.body.innerHTML = `
+          <style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:'Segoe UI',system-ui,sans-serif;
+                 display:flex;flex-direction:column;align-items:center;justify-content:center;
+                 height:100vh;animation:donePulse 1s ease-in-out infinite;cursor:pointer;
+                 background:#0a2e12;user-select:none;}
+            @keyframes donePulse{0%,100%{background:#0a2e12}50%{background:#14532d}}
+            .tick{font-size:2.2rem;margin-bottom:0.2rem;}
+            .done{font-size:1rem;font-weight:800;color:#4ade80;letter-spacing:0.1em;}
+            .sub{font-size:0.65rem;color:#86efac;opacity:0.7;margin-top:0.15rem;}
+            .tap{font-size:0.58rem;color:#86efac;opacity:0.45;margin-top:0.5rem;}
+          </style>
+          <div class="tick">✅</div>
+          <div class="done">SESSION DONE</div>
+          <div class="sub">${subject}</div>
+          <div class="tap">tap to log report</div>`;
+        const sc = d.createElement('script');
+        sc.textContent = `document.body.onclick = () => { window.opener && window.opener.focus(); window.opener && window.opener.showCompleteOverlay && window.opener.showCompleteOverlay(); };`;
+        d.body.appendChild(sc);
+      } catch(e) {}
+    }
+  }
+
+  window.showCompleteOverlay = function() {
+    const ov = document.getElementById('completeOverlay');
+    if (ov) ov.style.display = 'flex';
+    setTimeout(() => document.getElementById('cNote')?.focus(), 100);
+    // Restore PiP to normal after clicking
+    if (popoutWin && !popoutWin.closed) {
+      try { buildPipUI(popoutWin.document); updatePipDisplay(); } catch(e){}
+    }
+  };
+
+  function completeOverlaySave() {
+    saveSessionReportDirect(document.getElementById('cNote').value, '');
+    completeOverlayClose();
+  }
+  function completeOverlayClose() {
+    document.getElementById('completeOverlay').style.display = 'none';
+    if (popoutWin && !popoutWin.closed) { try { popoutWin.close(); } catch(e) {} }
+    popoutWin = null;
+    updateBreakBtn();
+    // Auto-start break now that the report is done (lock-in sessions only)
+    if (goalActive && !breakRunning && liveBreakAvailSecs() > 0) toggleBreak();
+  }
+  document.addEventListener('keydown', e => {
+    const ov = document.getElementById('completeOverlay');
+    if (ov.style.display !== 'none' && (e.ctrlKey || e.metaKey) && e.key === 'Enter') completeOverlaySave();
+  });
+
+  // Exposed for PiP window to call
+  window.pipTogglePause = function() {
+    if (running) pauseTimer();
+    else if (pauseStartMs) startTimer();
+  };
+
+  // Double-tap Alt to pause/resume
+  let lastAltMs = 0;
+  window.addEventListener('keyup', e => {
+    if (e.key !== 'Alt') return;
+    const now = Date.now();
+    if (now - lastAltMs < 600) {
+      lastAltMs = 0;
+      if (running) pauseTimer();
+      else if (pauseStartMs) startTimer();
+    } else {
+      lastAltMs = now;
+    }
+  });
+  // Block Alt from activating browser menu bar (prevents focus theft)
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Alt') e.preventDefault();
+  });
+
+  let pauseElapsedInterval = null;
+  function hidePausePopup() {
+    document.title = 'Study Tracker';
+    clearInterval(pauseNotifInterval);
+    clearInterval(pauseElapsedInterval);
+    pauseNotifInterval = null;
+    pauseElapsedInterval = null;
+  }
+
+  function showCompletePopup(subject, studyMins) {
+    const w    = Math.round(screen.availWidth  * 0.78);
+    const h    = Math.round(screen.availHeight * 0.78);
+    const left = Math.round((screen.availWidth  - w) / 2);
+    const top  = Math.round((screen.availHeight - h) / 2);
+    const popup = window.open('', '_blank',
+      `width=${w},height=${h},left=${left},top=${top},resizable=no,toolbar=no,menubar=no,location=no,status=no`);
+    if (!popup) return;
+    popup.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>✓ Session Complete</title><style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1a0d;
+           display:flex;flex-direction:column;align-items:center;justify-content:center;
+           height:100vh;color:#bbf7d0;user-select:none;overflow:hidden;position:relative;}
+      .trees{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:flex-end;
+             justify-content:space-around;pointer-events:none;padding:0 2rem;}
+      .tree{display:flex;flex-direction:column;align-items:center;
+            animation:sway 4s ease-in-out infinite;transform-origin:bottom center;}
+      .tree:nth-child(2){animation-delay:.7s;}.tree:nth-child(3){animation-delay:1.3s;}
+      .tree:nth-child(4){animation-delay:.4s;}.tree:nth-child(5){animation-delay:1.0s;}
+      .tree:nth-child(6){animation-delay:.2s;}.tree:nth-child(7){animation-delay:1.6s;}
+      @keyframes sway{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg)}}
+      .crown{font-size:var(--sz);line-height:1;}.trunk{width:7px;height:var(--th);background:#4a3018;border-radius:2px;}
+      .moon{position:fixed;top:6%;right:8%;font-size:2rem;opacity:0.5;pointer-events:none;}
+      .content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
+               width:min(520px,85%);margin-bottom:10vh;}
+      .tick{font-size:3rem;margin-bottom:0.4rem;}
+      .title{font-size:1.4rem;font-weight:800;color:#4ade80;letter-spacing:0.06em;margin-bottom:0.15rem;}
+      .meta{font-size:0.82rem;color:#86efac;opacity:0.7;margin-bottom:1.4rem;}
+      .field-label{font-size:0.7rem;font-weight:700;color:#4ade80;letter-spacing:0.08em;
+                   text-transform:uppercase;margin-bottom:0.3rem;align-self:flex-start;}
+      textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(74,222,128,0.25);
+               border-radius:10px;color:#bbf7d0;font-family:inherit;font-size:0.88rem;
+               padding:0.65rem 0.8rem;resize:none;outline:none;margin-bottom:0.9rem;
+               transition:border-color 0.15s;}
+      textarea:focus{border-color:rgba(74,222,128,0.6);}
+      textarea::placeholder{color:rgba(134,239,172,0.35);}
+      .actions{display:flex;gap:0.6rem;width:100%;}
+      .btn-save{flex:1;background:#15803d;color:#fff;border:none;border-radius:10px;
+                padding:0.7rem;font-size:0.95rem;font-weight:700;cursor:pointer;transition:background 0.15s;}
+      .btn-save:hover{background:#16a34a;}
+      .btn-skip{background:transparent;color:#86efac;border:1px solid rgba(74,222,128,0.2);
+                border-radius:10px;padding:0.7rem 1.2rem;font-size:0.88rem;cursor:pointer;
+                font-weight:600;transition:border-color 0.15s;}
+      .btn-skip:hover{border-color:rgba(74,222,128,0.5);}
+    </style></head><body>
+      <div class="moon">🌙</div>
+      <div class="content">
+        <div class="tick">✅</div>
+        <div class="title">Session Complete</div>
+        <div class="meta">${subject} · ${studyMins} min</div>
+        <div class="field-label">What did you get done?</div>
+        <textarea id="tasks" rows="3" placeholder="Tasks completed this session…"></textarea>
+        <div class="field-label">What did you learn?</div>
+        <textarea id="learnings" rows="4" placeholder="Key concepts, insights, breakthroughs…"></textarea>
+        <div class="actions">
+          <button class="btn-save" onclick="save()">💾 Save report</button>
+          <button class="btn-skip" onclick="window.close()">Skip</button>
+        </div>
+      </div>
+      <div class="trees">
+        <div class="tree" style="--sz:2.8rem;--th:22px"><div class="crown">🌲</div><div class="trunk"></div></div>
+        <div class="tree" style="--sz:4rem;--th:32px"><div class="crown">🌳</div><div class="trunk"></div></div>
+        <div class="tree" style="--sz:2.4rem;--th:18px"><div class="crown">🌲</div><div class="trunk"></div></div>
+        <div class="tree" style="--sz:4.5rem;--th:36px"><div class="crown">🌳</div><div class="trunk"></div></div>
+        <div class="tree" style="--sz:3rem;--th:24px"><div class="crown">🌲</div><div class="trunk"></div></div>
+        <div class="tree" style="--sz:3.8rem;--th:30px"><div class="crown">🌳</div><div class="trunk"></div></div>
+        <div class="tree" style="--sz:2.6rem;--th:20px"><div class="crown">🌲</div><div class="trunk"></div></div>
+      </div>
+      <script>
+        document.getElementById('tasks').focus();
+        function save() {
+          const tasks = document.getElementById('tasks').value;
+          const learnings = document.getElementById('learnings').value;
+          if (window.opener && !window.opener.closed) {
+            window.opener.saveSessionReportDirect(tasks, learnings);
+          }
+          window.close();
+        }
+        document.addEventListener('keydown', e => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') save();
+        });
+      <\/script>
+    </body></html>`);
+    popup.document.close();
+  }
+
+  window.saveSessionReportDirect = function(tasks, learnings) {
+    const logs = getLogs();
+    if (!logs.length) return;
+    const entry = logs[0];
+    const key = entry.date + '_0';
+    const reports = getSessionReports();
+    reports[key] = { tasks: tasks.trim(), learnings: learnings.trim(), savedAt: new Date().toISOString() };
+    localStorage.setItem(SESSION_REPORTS_KEY, JSON.stringify(reports));
+    renderLog();
+  };
+
+  function getPausedSecs() {
+    if (!pauseStartMs) return 0;
+    return Math.floor((Date.now() - pauseStartMs) / 1000);
+  }
+  // Wall-clock tracking — immune to Chrome tab throttling
+  let runStartMs    = null;  // Date.now() when current run began
+  let pausedRemMs   = durationSecs * 1000; // ms left when last paused/stopped
+  let pauseStartMs     = null; // Date.now() when current pause began
+  let sessionBeginMs   = null; // Date.now() of first Start (for total wall-clock log)
+  let cumulativePausedMs = 0;  // total ms spent paused this session (completed pauses)
+
+  // ---- Lock-In state ----
+  let goalStartTime    = null;
+  let goalStudiedSecs  = 0;
+  let goalSessionCount = 0;
+  let goalActive       = false;
+
+  // ---- Lunch break state ----
+  let lunchInterval  = null;
+  let lunchRemaining = 0;
+  let lunchActive    = false;
+  let lunchEndAt     = null; // absolute ms timestamp when lunch ends
+  let lunchStartMs   = null; // used to freeze/thaw the break interval during lunch
+  let goalLunchSecs  = 0;  // tracked separately for report
+
+  // ---- Direct PiP sync ----
+  function fmtMMSS(s) {
+    const m = Math.floor(s / 60), sec = s % 60;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  function updatePipDisplay() {
+    if (!popoutWin || popoutWin.closed) return;
+    try {
+      const d = popoutWin.document;
+      const pct = durationSecs > 0 ? ((durationSecs - remaining) / durationSecs) * 100 : 0;
+
+      // Paused state on body — only when actively mid-pause, not when idle/done
+      d.body.classList.toggle('paused', !running && pauseStartMs !== null);
+
+      // Break budget display + red when over budget
+      const currentPauseMs = (!running && pauseStartMs) ? (Date.now() - pauseStartMs) : 0;
+      const currentPauseSecs = Math.floor(currentPauseMs / 1000);
+      const bdg = getBudget();
+      // Include study time earned so far this session (live, not just on completion)
+      const studiedThisSessionSecs = sessionBeginMs
+        ? Math.floor((Date.now() - sessionBeginMs - cumulativePausedMs - currentPauseMs) / 1000)
+        : 0;
+      const liveEarned = bdg.earnedSecs + calcEarnedSecs(Math.max(0, studiedThisSessionSecs));
+      const availSecs = Math.max(0, liveEarned - bdg.usedSecs - currentPauseSecs);
+      const overBudget = !running && !!pauseStartMs && (bdg.usedSecs + currentPauseSecs > liveEarned);
+      d.body.classList.toggle('over-paused', overBudget);
+      const budgetEl = d.getElementById('budgetRow');
+      if (budgetEl) {
+        const bm = Math.floor(availSecs / 60), bs = availSecs % 60;
+        budgetEl.textContent = `🍃 ${bm}:${String(bs).padStart(2,'0')} break left`;
+      }
+
+      // Subject
+      const subjEl = d.getElementById('subj');
+      if (subjEl) {
+        const sub = document.getElementById('subjectInput').value.trim();
+        subjEl.textContent = sub || '';
+        subjEl.style.display = sub ? '' : 'none';
+      }
+
+      // MM:SS countdown (no hours)
+      d.getElementById('time').textContent = fmtMMSS(remaining);
+      d.getElementById('sb').disabled = running;
+      d.getElementById('pb').disabled = !running;
+      if (d.getElementById('bar')) d.getElementById('bar').style.width = pct + '%';
+
+    } catch(e) {}
+  }
+
+  const KEY              = 'studylog_v1';
+  const GOAL_KEY         = 'studyGoal_v1';
+  const TIMER_KEY        = 'timerState_v1';
+  const BREAK_BUDGET_KEY = 'break_budget_v1';
+  const DAY_START_KEY    = 'day_start_v1';
+  const AUTO_RESET_KEY   = 'auto_reset_time_v1'; // stored as "HH:MM" 24h string
+
+  // Returns the timestamp (ms) when the current "day" started (set by End Day)
+  function getDayStart() {
+    const v = parseInt(localStorage.getItem(DAY_START_KEY));
+    if (v && !isNaN(v)) return v;
+    // Default: midnight of today
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  // Check if auto-reset time has passed since the last day start
+  function checkAutoReset() {
+    const t = localStorage.getItem(AUTO_RESET_KEY); // "HH:MM"
+    if (!t) return;
+    const [hh, mm] = t.split(':').map(Number);
+    const now = new Date();
+    const resetToday = new Date(now); resetToday.setHours(hh, mm, 0, 0);
+    // If reset time is in the future, check yesterday's
+    if (resetToday > now) resetToday.setDate(resetToday.getDate() - 1);
+    if (getDayStart() < resetToday.getTime()) performEndDay(false);
+  }
+
+  function performEndDay(confirm = true) {
+    if (confirm) {
+      if (!window.confirm('End the day? This resets today\'s stats and break bank.')) return;
+    }
+    localStorage.setItem(DAY_START_KEY, Date.now().toString());
+    saveBudget({ earnedSecs: 0, usedSecs: 0 });
+    updateStats(); renderLog(); updateBreakBtn(); updateWastedDisplay();
+  }
+  function endDayNow() { performEndDay(true); }
+
+  function getBudget() {
+    try {
+      const b = JSON.parse(localStorage.getItem(BREAK_BUDGET_KEY)) || {};
+      if ((b.dayStart || 0) < getDayStart()) {
+        const fresh = { earnedSecs: 0, usedSecs: 0, dayStart: getDayStart() };
+        saveBudget(fresh); return fresh;
+      }
+      return b;
+    } catch { return { earnedSecs: 0, usedSecs: 0, dayStart: getDayStart() }; }
+  }
+  function saveBudget(b) { b.dayStart = getDayStart(); localStorage.setItem(BREAK_BUDGET_KEY, JSON.stringify(b)); }
+
+  // ---- Ratio config (focus mins per 1 min break) ----
+  const RATIO_KEY = 'study_ratio_v1';
+
+  function getRatio() {
+    try {
+      const r = JSON.parse(localStorage.getItem(RATIO_KEY));
+      if (r && r.focusMins > 0 && r.breakMins > 0) return r;
+    } catch(e) {}
+    return { focusMins: 3, breakMins: 1 };
+  }
+  function saveRatio(r) { localStorage.setItem(RATIO_KEY, JSON.stringify(r)); }
+
+  function calcEarnedSecs(studySecs) {
+    const r = getRatio();
+    return Math.floor(studySecs * r.breakMins / r.focusMins);
+  }
+
+  function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+  function applyFromRatio() {
+    const s = Math.max(1, parseInt(document.getElementById('ratioStudyInput').value) || 3);
+    const b = Math.max(1, parseInt(document.getElementById('ratioBreakInput').value) || 1);
+    saveRatio({ focusMins: s, breakMins: b });
+    renderRatioLabel();
+    updateBreakBtn();
+    updateWastedDisplay();
+  }
+
+  function renderRatioLabel() {
+    const el = document.getElementById('ratioLabel');
+    const si = document.getElementById('ratioStudyInput');
+    const bi = document.getElementById('ratioBreakInput');
+    const r  = getRatio();
+    if (si) si.value = r.focusMins;
+    if (bi) bi.value = r.breakMins;
+    if (el) {
+      const g = gcd(r.focusMins, r.breakMins);
+      const rs = r.focusMins / g, rb = r.breakMins / g;
+      const perMin = (r.focusMins / r.breakMins).toFixed(1).replace(/\.0$/, '');
+      el.textContent = `${rs}:${rb} — ${perMin} min focus per 1 min break`;
+    }
+  }
+
+  // ---- Settings modal ----
+  function openSettings() {
+    renderRatioLabel();
+    // Populate auto-reset input
+    const saved = localStorage.getItem(AUTO_RESET_KEY) || '';
+    document.getElementById('autoResetTime').value = saved;
+    updateAutoResetHint();
+    document.getElementById('settingsModal').style.display = 'flex';
+  }
+  function closeSettings() {
+    document.getElementById('settingsModal').style.display = 'none';
+  }
+  function saveAutoReset() {
+    const val = document.getElementById('autoResetTime').value;
+    if (val) localStorage.setItem(AUTO_RESET_KEY, val);
+    else localStorage.removeItem(AUTO_RESET_KEY);
+    updateAutoResetHint();
+  }
+  function clearAutoReset() {
+    localStorage.removeItem(AUTO_RESET_KEY);
+    document.getElementById('autoResetTime').value = '';
+    updateAutoResetHint();
+  }
+  function updateAutoResetHint() {
+    const hint = document.getElementById('autoResetHint');
+    const val  = localStorage.getItem(AUTO_RESET_KEY);
+    if (val) {
+      const [hh, mm] = val.split(':').map(Number);
+      const label = new Date(new Date().setHours(hh, mm, 0, 0))
+        .toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: true });
+      hint.textContent = `Day will auto-reset at ${label} each day.`;
+    } else {
+      hint.textContent = 'No auto-reset — use End Day manually.';
+    }
+  }
+  // Close on backdrop click
+  document.getElementById('settingsModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('settingsModal')) closeSettings();
+  });
+  function resetBreakBank() {
+    // Kill any running break first (don't bank it)
+    if (breakRunning) {
+      clearInterval(breakInterval);
+      breakInterval  = null;
+      breakRunning   = false;
+      breakRemaining = 0;
+      breakEndAt     = null;
+      document.getElementById('breakBar').classList.remove('visible');
+      document.getElementById('breakBtn').classList.remove('active');
+      document.getElementById('breakTime').style.display      = 'none';
+      document.getElementById('breakCancelBtn').style.display = 'none';
+      document.getElementById('breakEndLockInBtn').style.display = 'none';
+      document.getElementById('breakLabel').textContent = 'Break';
+    }
+    // Seed earnedSecs with whatever the current session has already earned so
+    // liveBreakAvailSecs() doesn't immediately re-inflate the bank from sessionBeginMs
+    const currentLiveEarned = calcEarnedSecs(liveStudiedSecs());
+    saveBudget({ earnedSecs: currentLiveEarned, usedSecs: currentLiveEarned });
+    updateWastedDisplay();
+    updateBreakBtn();
+  }
+  // Call when a session naturally completes
+  function earnBreak(studySecs) {
+    if (studySecs <= 0) return;
+    const b = getBudget();
+    b.earnedSecs += calcEarnedSecs(studySecs);
+    saveBudget(b);
+  }
+  // Call whenever a pause period ends
+  function bankPause(pauseSecs) {
+    if (pauseSecs <= 0) return;
+    const b = getBudget();
+    b.usedSecs += pauseSecs;
+    saveBudget(b);
+  }
+
+  function getLogs() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch { return []; }
+  }
+  function saveLogs(logs) { localStorage.setItem(KEY, JSON.stringify(logs)); }
+
+  // ---- Timer ----
+  function fmt(s) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return [h, m, sec].map(n => String(n).padStart(2, '0')).join(':');
+  }
+
+  function updateProgress() {
+    const pct = durationSecs > 0 ? ((durationSecs - remaining) / durationSecs) * 100 : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+  }
+
+  function setDuration(mins) {
+    if (running) return;
+    const m = Math.max(1, Math.min(480, parseInt(mins) || 30));
+    document.getElementById('durInput').value = m;
+    durationSecs = m * 60;
+    remaining    = durationSecs;
+    pausedRemMs  = durationSecs * 1000;
+    document.getElementById('display').textContent = fmt(remaining);
+    document.querySelectorAll('.preset-btn').forEach(b =>
+      b.classList.toggle('active', parseInt(b.textContent) === m));
+    updateProgress();
+    updatePipDisplay();
+  }
+
+  // Wall-clock tick — fires every 250ms so it's always accurate even in throttled tabs
+  function tick() {
+    if (!running) { clearInterval(timerInterval); timerInterval = null; return; }
+    const newRem = Math.max(0, Math.round((pausedRemMs - (Date.now() - runStartMs)) / 1000));
+    if (newRem === remaining && newRem > 0) return; // no visible change yet
+    remaining = newRem;
+    document.getElementById('display').textContent = fmt(remaining);
+    updateProgress();
+    updatePipDisplay();
+    updateBreakBtn();
+    updateWastedDisplay();
+    saveTimerState();
+    if (remaining <= 0) {
+      clearInterval(timerInterval); timerInterval = null;
+      running = false;
+      finishTimer();
+    }
+  }
+
+  function startTimer() {
+    if (running) return;
+    if (breakRunning) endBreak(true);
+
+    // Re-read duration if starting fresh
+    if (remaining >= durationSecs) {
+      const mins = parseInt(document.getElementById('durInput').value) || 30;
+      durationSecs = Math.max(1, mins) * 60;
+      remaining    = durationSecs;
+      pausedRemMs  = durationSecs * 1000;
+    }
+    runStartMs = Date.now();
+    if (pauseStartMs) {
+      const pausedMs = Date.now() - pauseStartMs;
+      cumulativePausedMs += pausedMs;
+      bankPause(Math.floor(pausedMs / 1000));
+    }
+    pauseStartMs = null;
+    if (!sessionBeginMs) { sessionBeginMs = Date.now(); cumulativePausedMs = 0; } // fresh start
+    running      = true;
+    hidePausePopup();
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(tick, 250); // 250ms for smooth, throttle-proof updates
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('pauseBtn').disabled  = false;
+    document.getElementById('stopBtn').disabled  = false;
+    document.getElementById('display').textContent = fmt(remaining);
+    updateProgress();
+    updatePipDisplay();
+    updateBreakBtn();
+    saveTimerState();
+  }
+
+  function pauseTimer(fromBreak = false) {
+    if (!running) return;
+    clearInterval(timerInterval); timerInterval = null;
+    // Snapshot exactly how many ms were left
+    pausedRemMs = Math.max(0, pausedRemMs - (Date.now() - runStartMs));
+    remaining   = Math.round(pausedRemMs / 1000);
+    runStartMs   = null;
+    pauseStartMs = Date.now();
+    running      = false;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled  = true;
+    document.getElementById('stopBtn').disabled  = false;
+    if (!fromBreak) showPausePopup();
+    updatePipDisplay();
+    updateBreakBtn();
+    saveTimerState();
+  }
+
+  function finishTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    running    = false;
+    runStartMs = null;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled  = true;
+    document.getElementById('stopBtn').disabled  = true;
+    const sub        = document.getElementById('subjectInput').value.trim() || 'General';
+    const endTime    = new Date();
+    const startTime  = sessionBeginMs ? new Date(sessionBeginMs) : new Date(endTime - durationSecs * 1000);
+    const totalSecs  = sessionBeginMs ? Math.round((endTime - sessionBeginMs) / 1000) : durationSecs;
+    const pausedSecs = Math.round(cumulativePausedMs / 1000);
+    const fmtT = d => d.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:true});
+    const timeRange = fmtT(startTime) + ' – ' + fmtT(endTime);
+    sessionBeginMs     = null;
+    pauseStartMs       = null;
+    cumulativePausedMs = 0;
+    earnBreak(durationSecs); // earn based on timer duration (elapsed is already pause-free)
+    const logs = getLogs();
+    logs.unshift({ subject: sub, seconds: durationSecs, totalSecs, pausedSecs, date: endTime.toISOString(), startDate: startTime.toISOString() });
+    saveLogs(logs); renderLog(); updateStats();
+    if (goalActive) { goalStudiedSecs += durationSecs; goalSessionCount++; saveGoalState(); }
+    // Break auto-starts only after the session report is dismissed (see completeOverlayClose)
+    pausedRemMs = durationSecs * 1000;
+    remaining   = durationSecs;
+    const disp = document.getElementById('display');
+    disp.style.color = '#34d399';
+    disp.textContent = '✓  Done!';
+    setTimeout(() => { disp.style.color = ''; disp.textContent = fmt(remaining); }, 3000);
+    updateProgress();
+    // Don't call updatePipDisplay here — showCompleteInPip takes over the window
+    localStorage.removeItem(TIMER_KEY);
+    if ('Notification' in window && Notification.permission === 'granted')
+      new Notification('Session complete! 🎉', { body: `${sub} — ${Math.round(durationSecs/60)}min done.` });
+    // Bring tracker tab to front and blast the overlay
+    window.focus();
+    document.getElementById('cSubj').textContent = sub;
+    document.getElementById('cRange').textContent = timeRange;
+    document.getElementById('cNote').value = '';
+    document.getElementById('completeOverlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('cNote').focus(), 100);
+    // Also update PiP if open
+    showCompleteInPip(sub, timeRange);
+  }
+
+  function stopTimer() {
+    const elapsed = durationSecs - remaining;
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    running    = false;
+    runStartMs = null;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled  = true;
+    document.getElementById('stopBtn').disabled  = true;
+    if (elapsed >= 1) {
+      const sub        = document.getElementById('subjectInput').value.trim() || 'General';
+      const endTime    = new Date();
+      const startTime  = sessionBeginMs ? new Date(sessionBeginMs) : new Date(Date.now() - elapsed * 1000);
+      const totalSecs  = sessionBeginMs ? Math.round((Date.now() - sessionBeginMs) / 1000) : elapsed;
+      const pausedSecs = Math.round(cumulativePausedMs / 1000);
+      const logs = getLogs();
+      logs.unshift({ subject: sub, seconds: elapsed, totalSecs, pausedSecs, date: endTime.toISOString(), startDate: startTime.toISOString() });
+      saveLogs(logs); renderLog(); updateStats();
+      if (goalActive) { goalStudiedSecs += elapsed; goalSessionCount++; saveGoalState(); }
+      earnBreak(elapsed); // elapsed is already pure study time (timer doesn't count down while paused)
+    }
+    sessionBeginMs     = null;
+    pauseStartMs       = null;
+    cumulativePausedMs = 0;
+    pausedRemMs = durationSecs * 1000;
+    remaining   = durationSecs;
+    document.getElementById('display').textContent = fmt(remaining);
+    updateProgress();
+    updatePipDisplay();
+    updateBreakBtn();
+    localStorage.removeItem(TIMER_KEY);
+    if (goalActive && !breakRunning && liveBreakAvailSecs() > 0) toggleBreak(); // auto-start break between lock-in sessions
+  }
+
+  function resetTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (lunchActive)  endLunch(true);
+    if (breakRunning) endBreak(true);
+    running        = false;
+    runStartMs     = null;
+    sessionBeginMs     = null;
+    pauseStartMs       = null;
+    cumulativePausedMs = 0;
+    remaining   = durationSecs;
+    pausedRemMs = durationSecs * 1000;
+    document.getElementById('display').textContent = fmt(remaining);
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled  = true;
+    document.getElementById('stopBtn').disabled  = true;
+    updateProgress();
+    updatePipDisplay();
+    localStorage.removeItem(TIMER_KEY);
+  }
+
+  // ---- Lunch break ----
+  function fmtLunch(s) {
+    const m = Math.floor(s / 60), sec = s % 60;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  function toggleLunch() {
+    if (lunchActive) { endLunch(true); return; }
+    startLunch();
+  }
+
+  function startLunch() {
+    if (lunchActive) return;
+
+    if (running) pauseTimer();
+    // Freeze any running break so it doesn't accrue wasted time during lunch
+    if (breakRunning && breakInterval) { clearInterval(breakInterval); breakInterval = null; }
+    lunchStartMs   = Date.now();
+    lunchActive    = true;
+    lunchRemaining = 60 * 60; // 1 hour
+    lunchEndAt     = Date.now() + lunchRemaining * 1000;
+    document.getElementById('lunchBar').classList.add('visible');
+    document.getElementById('lunchBtn').classList.add('active');
+    document.getElementById('lunchBtn').title = 'End lunch break';
+    document.getElementById('lunchTime').textContent = fmtLunch(lunchRemaining);
+    lunchInterval = setInterval(() => {
+      lunchRemaining = Math.max(0, Math.round((lunchEndAt - Date.now()) / 1000));
+      document.getElementById('lunchTime').textContent = fmtLunch(lunchRemaining);
+      updateWastedDisplay();
+      if (lunchRemaining % 10 === 0) saveTimerState();
+      if (lunchRemaining <= 0) endLunch(false);
+    }, 1000);
+    saveTimerState();
+  }
+
+  function endLunch(early) {
+    if (!lunchActive) return;
+    clearInterval(lunchInterval);
+    lunchInterval = null;
+    const taken = Math.round((Date.now() - (lunchEndAt - 3600 * 1000)) / 1000);
+    lunchActive   = false;
+    // Clear pause without banking — lunch is exempt from the break bank
+    if (pauseStartMs) { cumulativePausedMs += Date.now() - pauseStartMs; pauseStartMs = null; }
+    // Thaw the break: push breakEndAt forward by the lunch duration so lunch time is excluded
+    if (breakRunning && lunchStartMs) {
+      breakEndAt += Date.now() - lunchStartMs;
+      breakRemaining = Math.max(0, Math.round((breakEndAt - Date.now()) / 1000));
+      const secsLeft = Math.round((breakEndAt - Date.now()) / 1000);
+      if (secsLeft >= 0) {
+        document.getElementById('breakTime').style.color = '#60a5fa';
+        document.getElementById('breakTime').textContent = fmtLunch(breakRemaining);
+      } else {
+        const om = Math.floor(Math.abs(secsLeft) / 60), os = Math.abs(secsLeft) % 60;
+        document.getElementById('breakTime').style.color = '#f43f5e';
+        document.getElementById('breakTime').textContent = `+${om}:${String(os).padStart(2,'0')}`;
+        document.getElementById('breakLabel').textContent = '☠️ Over break bank';
+      }
+      breakInterval = setInterval(() => {
+        const sl = Math.round((breakEndAt - Date.now()) / 1000);
+        breakRemaining = Math.max(0, sl);
+        if (sl >= 0) {
+          document.getElementById('breakTime').style.color = '#60a5fa';
+          document.getElementById('breakTime').textContent = fmtLunch(breakRemaining);
+          document.getElementById('breakLabel').textContent =
+            `Break — ${Math.floor(breakDuration/60)}:${String(breakDuration%60).padStart(2,'0')} available`;
+        } else {
+          const om = Math.floor(Math.abs(sl)/60), os = Math.abs(sl)%60;
+          document.getElementById('breakTime').style.color = '#f43f5e';
+          document.getElementById('breakTime').textContent = `+${om}:${String(os).padStart(2,'0')}`;
+          document.getElementById('breakLabel').textContent = '☠️ Over break bank';
+        }
+        updateWastedDisplay();
+        if (sl % 10 === 0) saveTimerState();
+      }, 1000);
+    }
+    lunchStartMs = null;
+    if (goalActive) goalLunchSecs += taken;
+    document.getElementById('lunchBar').classList.remove('visible');
+    document.getElementById('lunchBtn').classList.remove('active');
+    document.getElementById('lunchBtn').title = 'Take a 1-hour lunch break';
+    saveTimerState();
+    if (!early) {
+      // Countdown finished — notify
+      if ('Notification' in window && Notification.permission === 'granted')
+        new Notification('Lunch over! 🍴', { body: 'Time to get back to it.' });
+      // Flash the display briefly
+      const d = document.getElementById('display');
+      const prev = d.textContent;
+      d.style.color = '#fb923c';
+      d.textContent = 'Back to it!';
+      setTimeout(() => { d.style.color = ''; d.textContent = prev; }, 2500);
+    }
+  }
+
+  // ---- Short break timer ----
+  let breakInterval  = null;
+  let breakRemaining = 0;
+  let breakRunning   = false;
+  let breakEndAt     = null;
+  let breakDuration  = 0; // original break length in seconds
+
+  // How many seconds have been genuinely studied this session (excludes current pause).
+  // cumulativePausedMs tracks past pauses; if currently paused we also subtract that live gap.
+  function liveStudiedSecs() {
+    if (!sessionBeginMs) return 0;
+    const curPauseMs = (!running && pauseStartMs) ? (Date.now() - pauseStartMs) : 0;
+    return Math.max(0, Math.floor((Date.now() - sessionBeginMs - cumulativePausedMs - curPauseMs) / 1000));
+  }
+
+  function updateWastedDisplay() {
+    const bdg = getBudget();
+    const liveEarned = bdg.earnedSecs + calcEarnedSecs(liveStudiedSecs());
+    // Current unbanked pause/break time
+    const activePauseSecs = (!running && pauseStartMs)
+      ? Math.floor((Date.now() - pauseStartMs) / 1000) : 0;
+    const activeBreakSecs = (breakRunning && breakEndAt)
+      ? Math.floor((Date.now() - (breakEndAt - breakDuration * 1000)) / 1000) : 0;
+    const totalUsed = bdg.usedSecs + Math.max(activePauseSecs, activeBreakSecs);
+    const wasted = Math.max(0, totalUsed - liveEarned);
+    const bar = document.getElementById('wastedBar');
+    if (!bar) return;
+    const nothingActive = !running && activePauseSecs === 0 && activeBreakSecs === 0;
+    if (wasted <= 0 || nothingActive) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    const wm = Math.floor(wasted / 60), ws = wasted % 60;
+    document.getElementById('wastedTime').textContent = `${wm}:${String(ws).padStart(2,'0')}`;
+    document.getElementById('wastedLabel').textContent = `Wasted time — ${wm}m ${ws}s over your break bank`;
+  }
+
+  function liveBreakAvailSecs() {
+    const bdg = getBudget();
+    const liveEarned = bdg.earnedSecs + calcEarnedSecs(liveStudiedSecs());
+    return Math.max(0, liveEarned - bdg.usedSecs);
+  }
+
+  function updateBreakBtn() {
+    const btn = document.getElementById('breakBtn');
+    if (!btn || breakRunning) return;
+    // Session is active (running or mid-pause) — break is handled by pausing, not this button
+    const sessionActive = running || !!pauseStartMs;
+    if (sessionActive) {
+      btn.disabled = true;
+      btn.title = 'Pause the timer to use your break time';
+      const avail = liveBreakAvailSecs();
+      const m = Math.floor(avail / 60), s = avail % 60;
+      btn.textContent = `☕ Break (${m}:${String(s).padStart(2,'0')})`;
+      return;
+    }
+    const avail = liveBreakAvailSecs();
+    if (avail <= 0) {
+      btn.textContent = '☕ Break (0:00)';
+      btn.disabled = false;
+      btn.title = 'No bank left — will go straight to wasted time';
+    } else {
+      const m = Math.floor(avail / 60), s = avail % 60;
+      btn.textContent = `☕ Break (${m}:${String(s).padStart(2,'0')})`;
+      btn.disabled = false;
+      btn.title = 'Take a break using your earned break time';
+    }
+  }
+
+  function toggleBreak() {
+    if (breakRunning) { endBreak(true); return; }
+    startBreak(liveBreakAvailSecs()); // matches exactly what the button displays
+  }
+
+  function startBreak(secs) {
+    if (running) pauseTimer(true);
+    hidePausePopup();
+    // If already paused before hitting Break, bank that pre-break pause time now
+    // so startTimer doesn't double-bank it later
+    if (!running && pauseStartMs) {
+      const preMs = Date.now() - pauseStartMs;
+      cumulativePausedMs += preMs;
+      bankPause(Math.floor(preMs / 1000));
+      pauseStartMs = null;
+    }
+    breakRunning   = true;
+    breakDuration  = secs;
+    breakRemaining = secs;
+    breakEndAt     = Date.now() + secs * 1000;
+    const bm = Math.floor(secs / 60), bs = secs % 60;
+    document.getElementById('breakLabel').textContent  = `Break — ${bm}:${String(bs).padStart(2,'0')} available`;
+    document.getElementById('breakTime').style.display      = '';
+    // During lock-in: only "End Lock-In" is allowed, not manual Done early
+    document.getElementById('breakCancelBtn').style.display    = goalActive ? 'none' : '';
+    document.getElementById('breakEndLockInBtn').style.display = goalActive ? ''     : 'none';
+    document.getElementById('breakTime').textContent = fmtLunch(breakRemaining);
+    document.getElementById('breakBar').classList.add('visible');
+    document.getElementById('breakBtn').classList.add('active');
+    breakInterval = setInterval(() => {
+      const secsLeft = Math.round((breakEndAt - Date.now()) / 1000);
+      breakRemaining = Math.max(0, secsLeft);
+      if (secsLeft >= 0) {
+        // Counting down through bank
+        document.getElementById('breakTime').style.color = '#60a5fa';
+        document.getElementById('breakTime').textContent = fmtLunch(breakRemaining);
+        document.getElementById('breakLabel').textContent =
+          `Break — ${Math.floor(breakDuration/60)}:${String(breakDuration%60).padStart(2,'0')} available`;
+      } else {
+        // Over budget — count up wasted time
+        const overSecs = Math.abs(secsLeft);
+        const om = Math.floor(overSecs / 60), os = overSecs % 60;
+        document.getElementById('breakTime').style.color = '#f43f5e';
+        document.getElementById('breakTime').textContent = `+${om}:${String(os).padStart(2,'0')}`;
+        document.getElementById('breakLabel').textContent = '☠️ Over break bank';
+      }
+      updateWastedDisplay();
+      if (secsLeft % 10 === 0) saveTimerState();
+    }, 1000);
+    saveTimerState();
+  }
+
+  function endBreak(early) {
+    // Bank only what was actually used — the unspent portion stays available
+    // automatically since available = earnedSecs - usedSecs
+    const totalElapsedSecs = Math.round((Date.now() - (breakEndAt - breakDuration * 1000)) / 1000);
+    bankPause(Math.max(0, totalElapsedSecs));
+    clearInterval(breakInterval);
+    breakInterval  = null;
+    breakRunning   = false;
+    breakRemaining = 0;
+    document.getElementById('breakBar').classList.remove('visible');
+    document.getElementById('breakBtn').classList.remove('active');
+    document.getElementById('breakTime').style.display         = 'none';
+    document.getElementById('breakTime').style.color           = '#60a5fa';
+    document.getElementById('breakCancelBtn').style.display    = 'none';
+    document.getElementById('breakEndLockInBtn').style.display = 'none';
+    document.getElementById('breakLabel').textContent = 'Break';
+    updateBreakBtn();
+    updateWastedDisplay();
+    saveTimerState();
+    if (!early) {
+      if ('Notification' in window && Notification.permission === 'granted')
+        new Notification('Break over! ☕', { body: 'Time to lock back in.' });
+      const d = document.getElementById('display');
+      const prev = d.textContent;
+      d.style.color = '#60a5fa';
+      d.textContent = 'Break over!';
+      setTimeout(() => { d.style.color = ''; d.textContent = prev; }, 2500);
+    }
+  }
+
+  // ---- Always-on-top mini window (Document Picture-in-Picture) ----
+  function buildPipUI(doc) {
+    // Clear any leftover styles from session-complete state
+    doc.head.querySelectorAll('style').forEach(s => s.remove());
+    doc.body.style.animation = 'none';
+    doc.body.style.cursor = '';
+
+    const style = doc.createElement('style');
+    style.textContent = `
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;
+           display:flex;flex-direction:column;align-items:center;justify-content:center;
+           height:100vh;padding:0.6rem 0.8rem;user-select:none;overflow:hidden;
+           transition:background 0.4s;}
+      body.paused{background:#0d1f12;}
+      body.over-paused{background:#2d0a0a!important;transition:background 0.6s;}
+      body.over-paused .time{color:#f87171;}
+      body.over-paused .bar{background:linear-gradient(90deg,#dc2626,#f87171);}
+      .paused-label{display:none;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;
+                    color:#4ade80;margin-bottom:0.15rem;}
+      body.paused .paused-label{display:block;}
+      body.over-paused .paused-label{color:#f87171;}
+      .label{font-size:0.5rem;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:0.15rem;}
+      .subj{font-size:0.6rem;font-weight:600;color:#a78bfa;
+            width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+            margin:0.1rem 0;}
+      .time{font-size:1.7rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.03em;text-align:center;}
+      @keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+      .bar-wrap{width:100%;height:3px;background:#22263a;border-radius:99px;margin:0.25rem 0 0.3rem;overflow:hidden;}
+      .bar{height:100%;background:linear-gradient(90deg,#7c6af7,#a78bfa);border-radius:99px;width:0%;transition:width 1s linear;}
+      .btns{display:flex;gap:0.3rem;margin-top:0.3rem;width:100%;}
+      button{flex:1;padding:0.3rem 0;border:none;border-radius:6px;font-size:0.65rem;font-weight:600;cursor:pointer;}
+      button:disabled{opacity:.35;cursor:not-allowed;}
+      .s{background:#7c6af7;color:#fff;}
+      .p{background:#fb923c;color:#fff;}
+      .budget-row{font-size:0.55rem;color:#4ade80;text-align:center;margin-top:0.1rem;white-space:nowrap;}
+      body.over-paused .budget-row{color:#f87171;}
+    `;
+    doc.head.appendChild(style);
+
+    doc.title = '⏱';
+    doc.body.innerHTML = `
+      <div class="paused-label">⏸ paused</div>
+      <div class="time" id="time">30:00</div>
+      <div class="subj" id="subj"></div>
+      <div class="budget-row" id="budgetRow">🍃 0:00 break left</div>
+      <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+      <div class="btns">
+        <button class="s" id="sb">Study</button>
+        <button class="p" id="pb" disabled>Pause</button>
+      </div>`;
+
+    // Buttons call directly into the opener window — no BroadcastChannel needed
+    const script = doc.createElement('script');
+    script.textContent = `
+      document.getElementById('sb').onclick = () => window.opener.startTimer();
+      document.getElementById('pb').onclick = () => window.opener.pauseTimer();
+      // Double-tap Alt in PiP to pause/resume
+      let lastAlt = 0;
+      window.addEventListener('keyup', e => {
+        if (e.key !== 'Alt') return;
+        const now = Date.now();
+        if (now - lastAlt < 600) {
+          lastAlt = 0;
+          window.opener && window.opener.pipTogglePause && window.opener.pipTogglePause();
+        } else { lastAlt = now; }
+      });
+      window.addEventListener('keydown', e => { if (e.key === 'Alt') e.preventDefault(); });
+    `;
+    doc.body.appendChild(script);
+  }
+
+  async function popoutTimer() {
+    if (popoutWin && !popoutWin.closed) { updatePipDisplay(); return; }
+
+    // Try Document Picture-in-Picture (Chrome 116+, always-on-top)
+    if ('documentPictureInPicture' in window) {
+      try {
+        popoutWin = await documentPictureInPicture.requestWindow({ width: 160, height: 125 });
+        buildPipUI(popoutWin.document);
+        updatePipDisplay();
+        popoutWin.addEventListener('pagehide', () => { popoutWin = null; });
+        return;
+      } catch(e) { /* fall through to regular popup */ }
+    }
+
+    // Fallback: regular popup (separate window, not always-on-top)
+    popoutWin = window.open('', 'StudyTimerPopout',
+      'width=160,height=150,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no');
+    if (!popoutWin) {
+      alert('Popup blocked! Allow popups for this page, then try again.');
+      return;
+    }
+    popoutWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Study Timer</title></head><body></body></html>');
+    popoutWin.document.close();
+    buildPipUI(popoutWin.document);
+    updatePipDisplay();
+    const poll = setInterval(() => { if (popoutWin.closed) { popoutWin = null; clearInterval(poll); } }, 1000);
+  }
+
+  // ---- Study Goal ----
+  function fmtHMS(s) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
+  // ---- Lock-In state persistence ----
+  function saveGoalState() {
+    if (!goalActive) return;
+    localStorage.setItem(GOAL_KEY, JSON.stringify({
+      startTime:    goalStartTime.toISOString(),
+      studiedSecs:  goalStudiedSecs,
+      sessionCount: goalSessionCount
+    }));
+  }
+
+  function clearGoalState() { localStorage.removeItem(GOAL_KEY); }
+
+  function activateGoal() {
+    const btn = document.getElementById('lockInBtn');
+    if (btn) { btn.textContent = '🔓 Locked In'; btn.classList.add('active'); }
+    updateLockinStat();
+  }
+
+  function restoreGoalState() {
+    const raw = localStorage.getItem(GOAL_KEY);
+    if (!raw) return;
+    try {
+      const s = JSON.parse(raw);
+      goalStartTime    = new Date(s.startTime);
+      goalStudiedSecs  = s.studiedSecs  || 0;
+      goalSessionCount = s.sessionCount || 0;
+      goalActive       = true;
+      activateGoal();
+    } catch(e) { clearGoalState(); }
+  }
+
+  function toggleLockIn() {
+    if (goalActive) { endSessionEarly(); return; }
+    goalStartTime    = new Date();
+    goalStudiedSecs  = 0;
+    goalSessionCount = 0;
+    goalActive       = true;
+    saveGoalState();
+    activateGoal();
+    if (!running) startTimer(); // auto-start study session
+  }
+
+  function updateLockinStat() {
+    const wrap  = document.getElementById('statLockinWrap');
+    const times = document.getElementById('statLockinTimes');
+    const badge = document.getElementById('statLockinBadge');
+    if (!goalStartTime) return;
+    const startStr = goalStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    times.textContent = `Locked in since ${startStr} · ${goalSessionCount} session${goalSessionCount !== 1 ? 's' : ''}`;
+    wrap.style.display = '';
+    badge.className = 'lockin-badge';
+    badge.textContent = '● Live';
+  }
+
+  function cancelStudySession() {
+    goalActive = false;
+    goalStartTime = null;
+    goalStudiedSecs = 0; goalSessionCount = 0;
+    goalLunchSecs = 0;
+    clearGoalState();
+    const btn = document.getElementById('lockInBtn');
+    if (btn) { btn.textContent = '🔒 Lock In'; btn.classList.remove('active'); }
+  }
+
+  function endSessionEarly() {
+    if (running) stopTimer();
+    if (breakRunning) endBreak(true);
+    showReport();
+  }
+
+  function showReport() {
+    if (lunchActive) endLunch(true);
+    const endTime    = new Date();
+    const totalWindow = goalStartTime ? Math.floor((endTime - goalStartTime) / 1000) : 0;
+    const studied  = goalStudiedSecs;
+    const lunch    = goalLunchSecs;
+    const idleBrk  = Math.max(0, totalWindow - studied - lunch);
+    const studyPct = totalWindow > 0 ? (studied / totalWindow) * 100 : 0;
+    const lunchPct = totalWindow > 0 ? (lunch   / totalWindow) * 100 : 0;
+
+    const startStr = goalStartTime
+      ? goalStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+    const endStr   = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    document.getElementById('reportWindow').textContent   = `${startStr} → ${endStr}  ·  ${fmtHMS(totalWindow)} total`;
+    document.getElementById('reportStudied').textContent  = fmtHMS(studied);
+    document.getElementById('reportLunch').textContent    = lunch ? fmtHMS(lunch) : '—';
+    document.getElementById('reportBreak').textContent    = fmtHMS(idleBrk);
+    document.getElementById('reportSessions').textContent = goalSessionCount;
+    document.getElementById('reportBarStudy').style.width = studyPct + '%';
+    document.getElementById('reportBarLunch').style.width = lunchPct + '%';
+    document.getElementById('reportModal').style.display  = 'flex';
+
+    // Freeze stat card
+    const badge = document.getElementById('statLockinBadge');
+    const times = document.getElementById('statLockinTimes');
+    if (times) times.textContent = `${startStr} → ${endStr}`;
+    if (document.getElementById('statLockinWrap'))
+      document.getElementById('statLockinWrap').style.display = '';
+    if (badge) { badge.className = 'lockin-badge done'; badge.textContent = '✓ Done'; }
+
+    cancelStudySession();
+  }
+
+  const REPORT_KEY = 'lockinReports_v1';
+  function getReports() { try { return JSON.parse(localStorage.getItem(REPORT_KEY)) || []; } catch { return []; } }
+  function saveReports(r) { localStorage.setItem(REPORT_KEY, JSON.stringify(r)); }
+
+  function closeReport() {
+    // Grab values from the modal before hiding
+    const winText   = document.getElementById('reportWindow').textContent;
+    const studied   = document.getElementById('reportStudied').textContent;
+    const lunch     = document.getElementById('reportLunch').textContent;
+    const idleBrk   = document.getElementById('reportBreak').textContent;
+    const sessions  = document.getElementById('reportSessions').textContent;
+    const studyPct  = parseFloat(document.getElementById('reportBarStudy').style.width) || 0;
+    const lunchPct  = parseFloat(document.getElementById('reportBarLunch').style.width)  || 0;
+
+    const reports = getReports();
+    reports.unshift({ date: new Date().toISOString(), window: winText, studied, lunch, idleBrk, sessions, studyPct, lunchPct });
+    saveReports(reports);
+    renderReports();
+    document.getElementById('reportModal').style.display = 'none';
+  }
+
+  function renderReports() {
+    const reports = getReports();
+    const card = document.getElementById('reportsCard');
+    const list  = document.getElementById('reportsList');
+    if (!reports.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    list.innerHTML = reports.map((r, i) => {
+      const d = new Date(r.date);
+      const dateLabel = d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' })
+                      + ' · ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      const breakPct = Math.max(0, 100 - r.studyPct - r.lunchPct);
+      return `
+        <div class="report-entry">
+          <div class="re-header">
+            <span class="re-window">${r.window}</span>
+            <span style="display:flex;align-items:center;gap:0.6rem">
+              <span class="re-date">${dateLabel}</span>
+              <button class="re-del" onclick="deleteReport(${i})" title="Delete">✕</button>
+            </span>
+          </div>
+          <div class="re-stats">
+            <span class="re-stat"><span class="re-stat-val" style="color:var(--green)">${r.studied}</span><span style="color:var(--muted)">studied</span></span>
+            ${r.lunch !== '—' ? `<span class="re-stat"><span class="re-stat-val" style="color:#fb923c">${r.lunch}</span><span style="color:var(--muted)">lunch</span></span>` : ''}
+            <span class="re-stat"><span class="re-stat-val" style="color:var(--muted)">${r.idleBrk}</span><span style="color:var(--muted)">idle break</span></span>
+            <span class="re-stat"><span class="re-stat-val" style="color:var(--accent2)">${r.sessions}</span><span style="color:var(--muted)">session${r.sessions!=1?'s':''}</span></span>
+          </div>
+          <div class="re-bar-wrap">
+            <div style="width:${r.studyPct}%;background:var(--green)"></div>
+            <div style="width:${r.lunchPct}%;background:#fb923c"></div>
+            <div style="width:${breakPct}%;background:var(--surface2)"></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function deleteReport(i) {
+    const reports = getReports();
+    reports.splice(i, 1);
+    saveReports(reports);
+    renderReports();
+  }
+
+  function clearReports() {
+    if (confirm('Clear all lock-in reports?')) { saveReports([]); renderReports(); }
+  }
+
+  // ---- Log ----
+  function fmtDur(s) {
+    if (s < 60) return `${s}s`;
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    return sec > 0 ? `${m}m ${sec}s` : `${m}m`;
+  }
+
+  function fmtDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function localDateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  let activeAnalysisKey = null;
+
+  function renderAnalysis(plannerKey, dayLabel, entries) {
+    const panel = document.getElementById('analysisPanel');
+
+    // Toggle off if same day clicked again
+    if (activeAnalysisKey === plannerKey && panel.style.display !== 'none') {
+      panel.style.display = 'none';
+      activeAnalysisKey = null;
+      document.querySelectorAll('.lg-analyse-btn').forEach(b => b.classList.remove('active'));
+      return;
+    }
+    activeAnalysisKey = plannerKey;
+    panel.style.display = 'block';
+    document.querySelectorAll('.lg-analyse-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.lg-analyse-btn[data-key="${plannerKey}"]`)?.classList.add('active');
+
+    const totalStudySecs  = entries.reduce((s, e) => s + (e.seconds  || 0), 0);
+    const totalPausedSecs = entries.reduce((s, e) => s + (e.pausedSecs || 0), 0);
+    const sessions        = entries.length;
+    const avgSecs         = sessions > 0 ? Math.round(totalStudySecs / sessions) : 0;
+
+    // Pull free-study-time written by the planner
+    const plannerSummary = JSON.parse(localStorage.getItem('planner_day_summary') || '{}');
+    const plannerDay     = plannerSummary[plannerKey];
+    const freeMins       = plannerDay ? plannerDay.freeStudyMins : null;
+    const studyMins      = Math.round(totalStudySecs / 60);
+
+    let pct = null, barColor = '#64748b', verdict = '';
+    if (freeMins && freeMins > 0) {
+      pct = Math.min(120, Math.round(studyMins / freeMins * 100));
+      barColor = pct >= 80 ? '#34d399' : pct >= 50 ? '#fb923c' : '#f87171';
+      verdict  = pct >= 90 ? 'Locked in 🔥' : pct >= 70 ? 'Solid day 👍' : pct >= 40 ? 'Could do more' : 'Light day 😴';
+    }
+
+    const fmtHM = s => {
+      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+      if (h === 0) return `${m}m`;
+      return m ? `${h}h ${m}m` : `${h}h`;
+    };
+
+    panel.innerHTML = `
+      <div class="ap-title">Day Analysis</div>
+      <div class="ap-day">${dayLabel}</div>
+
+      ${pct !== null ? `
+        <div style="text-align:center;margin-bottom:0.75rem">
+          <div class="ap-score" style="color:${barColor}">${pct}%</div>
+          <div class="ap-score-label">${verdict}</div>
+          <div class="ap-bar-wrap"><div class="ap-bar" style="width:${Math.min(100,pct)}%;background:${barColor}"></div></div>
+        </div>
+      ` : ''}
+
+      <div class="ap-row">
+        <span class="ap-label">Study time</span>
+        <span class="ap-val" style="color:var(--accent2)">${fmtHM(totalStudySecs)}</span>
+      </div>
+      ${freeMins ? `
+      <div class="ap-row">
+        <span class="ap-label">Free time (planner)</span>
+        <span class="ap-val">${fmtHM(freeMins*60)}</span>
+      </div>` : ''}
+      <div class="ap-row">
+        <span class="ap-label">Sessions</span>
+        <span class="ap-val">${sessions}</span>
+      </div>
+      <div class="ap-row">
+        <span class="ap-label">Avg session</span>
+        <span class="ap-val">${fmtHM(avgSecs)}</span>
+      </div>
+      ${totalPausedSecs > 30 ? `
+      <div class="ap-row">
+        <span class="ap-label">Total paused</span>
+        <span class="ap-val" style="color:var(--muted)">${fmtHM(totalPausedSecs)}</span>
+      </div>` : ''}
+
+      ${!plannerDay ? `<div class="ap-no-planner">Open the planner for this day to unlock productivity % comparisons.</div>` : ''}
+    `;
+  }
+
+  function renderLog() {
+    const logs = getLogs();
+    const list = document.getElementById('logList');
+    list.innerHTML = '';
+    if (logs.length === 0) {
+      list.innerHTML = '<p class="empty-msg">No sessions yet — start studying!</p>';
+      return;
+    }
+
+    const now       = new Date();
+    // Group by calendar date
+    function logDayKey(d) {
+      const x = new Date(d); x.setHours(0, 0, 0, 0); return x.toDateString();
+    }
+    const todayStr  = logDayKey(now);
+    const yest      = new Date(now); yest.setDate(yest.getDate() - 1);
+    const yesterStr = logDayKey(yest);
+
+    // Group by 3am-adjusted day, preserving original indices
+    const groups = new Map();
+    logs.forEach((e, i) => {
+      const key = logDayKey(new Date(e.date));
+      const d   = new Date(e.date);
+      if (!groups.has(key)) groups.set(key, { date: d, entries: [] });
+      groups.get(key).entries.push({ e, i });
+    });
+
+    groups.forEach(({ date, entries }, key) => {
+      const isToday = key === todayStr;
+      const isYest  = key === yesterStr;
+      const dayLabel = isToday ? 'Today'
+                     : isYest  ? 'Yesterday'
+                     : date.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+      const plannerKey = localDateStr(date);
+
+      const totalStudySecs = entries.reduce((s, { e }) => s + (e.seconds || 0), 0);
+      const totalH = (totalStudySecs / 3600).toFixed(1);
+      const sessionWord = entries.length === 1 ? 'session' : 'sessions';
+
+      const details = document.createElement('details');
+      details.className = 'log-group';
+      if (isToday) details.open = true;
+
+      details.innerHTML = `
+        <summary>
+          <span class="lg-day ${isToday ? 'lg-today' : ''}">${dayLabel}</span>
+          <span class="lg-meta">${entries.length} ${sessionWord}</span>
+          <span class="lg-total">${totalH}h</span>
+          <button class="lg-analyse-btn" data-key="${plannerKey}">Analyse</button>
+          <span class="lg-chevron">▶</span>
+        </summary>
+        <ul class="log-group-items">
+          ${entries.map(({ e, i }) => {
+            const studyStr   = fmtDur(e.seconds);
+            const pausedStr  = (e.pausedSecs > 30)
+              ? `<span class="log-total">⏸ ${fmtDur(e.pausedSecs)} paused</span>`
+              : '';
+            const fmtT = d => d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+            const timeOnly   = e.startDate
+              ? fmtT(new Date(e.startDate)) + ' – ' + fmtT(new Date(e.date))
+              : fmtT(new Date(e.date));
+            const reportKey  = e.date + '_' + i;
+            const hasReport  = !!getSessionReports()[reportKey];
+            return `<li class="log-item">
+              <span class="log-dot"></span>
+              <span class="log-subject">${escHtml(e.subject)}</span>
+              <span class="log-duration">${studyStr}</span>
+              ${pausedStr}
+              <span class="log-date">${timeOnly}</span>
+              <button class="log-report-btn ${hasReport ? 'has-report' : ''}" onclick="openSessionReport(${i})" title="${hasReport ? 'View session report' : 'Add session report'}">${hasReport ? '📋 Report' : '+ Report'}</button>
+              <button class="log-del" title="Delete" onclick="deleteEntry(${i})">✕</button>
+            </li>`;
+          }).join('')}
+        </ul>`;
+
+      // Wire analyse button — stop it from toggling <details>
+      const analyseBtn = details.querySelector('.lg-analyse-btn');
+      analyseBtn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        renderAnalysis(plannerKey, dayLabel, entries.map(x => x.e));
+      });
+
+      list.appendChild(details);
+    });
+  }
+
+  function deleteEntry(i) {
+    const logs = getLogs();
+    logs.splice(i, 1);
+    saveLogs(logs);
+    renderLog();
+    updateStats();
+  }
+
+  function clearAll() {
+    if (confirm('Clear all logged sessions?')) {
+      saveLogs([]);
+      renderLog();
+      updateStats();
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ---- Stats ----
+  function isToday(iso) {
+    return new Date(iso).getTime() >= getDayStart();
+  }
+  function isThisWeek(iso) {
+    // Last 7 days from the current day start
+    return new Date(iso).getTime() >= (getDayStart() - 6 * 86400000);
+  }
+
+  function fmtHM(s) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return `${h}h ${m}m`;
+  }
+
+  function updateStats() {
+    const logs = getLogs();
+    const todayLogs = logs.filter(e => isToday(e.date));
+    const weekLogs  = logs.filter(e => isThisWeek(e.date));
+    const totalToday = todayLogs.reduce((a,e) => a + e.seconds, 0);
+    const totalWeek  = weekLogs.reduce((a,e) => a + e.seconds, 0);
+    const avg = logs.length ? Math.round(logs.reduce((a,e)=>a+e.seconds,0) / logs.length) : 0;
+
+    document.getElementById('statTotal').textContent = fmtHM(totalToday);
+    document.getElementById('statSessions').textContent = todayLogs.length;
+    document.getElementById('statWeek').textContent = fmtHM(totalWeek);
+    document.getElementById('statAvg').textContent = avg < 3600
+      ? `${Math.floor(avg/60)}m`
+      : `${Math.floor(avg/3600)}h ${Math.floor((avg%3600)/60)}m`;
+  }
+
+  // Keep PiP + wasted display ticking while paused
+  setInterval(() => {
+    if (!running && pauseStartMs) {
+      updatePipDisplay();
+      updateWastedDisplay();
+    }
+  }, 1000);
+
+  // (Spacebar shortcut removed — was unreliable on float window)
+
+  // ---- Auto-save on close / laptop lid ----
+  function savePartialSession() {
+    if (!running || !runStartMs) return;
+    const remMs  = Math.max(0, pausedRemMs - (Date.now() - runStartMs));
+    const elapsed = durationSecs - Math.round(remMs / 1000);
+    if (elapsed < 1) return;
+    const sub       = document.getElementById('subjectInput').value.trim() || 'General';
+    const endTime   = new Date();
+    const startTime = sessionBeginMs ? new Date(sessionBeginMs) : new Date(Date.now() - elapsed * 1000);
+    const logs = getLogs();
+    logs.unshift({ subject: sub, seconds: elapsed, date: endTime.toISOString(), startDate: startTime.toISOString() });
+    saveLogs(logs);
+    if (goalActive) { goalStudiedSecs += elapsed; goalSessionCount++; saveGoalState(); }
+  }
+
+  // On any unload (reload or close) — just snapshot state, nothing else.
+  // No banking, no earning, no logging — those only happen at real session end.
+  window.addEventListener('beforeunload', () => { saveTimerState(); });
+
+  // ---- Todos ----
+  const TODOS_KEY = 'study_todos_v1';
+  let todos = [];
+  try { todos = JSON.parse(localStorage.getItem(TODOS_KEY) || '[]'); } catch(e) {}
+
+  function saveTodos() { localStorage.setItem(TODOS_KEY, JSON.stringify(todos)); }
+
+  function addTodo() {
+    const textInput    = document.getElementById('todoInput');
+    const subjectInput = document.getElementById('todoSubjectInput');
+    const text    = textInput.value.trim();
+    if (!text) { textInput.focus(); return; }
+    const subject = subjectInput.value.trim();
+    todos.unshift({ id: Date.now(), text, subject, done: false, createdAt: new Date().toISOString() });
+    saveTodos();
+    textInput.value    = '';
+    subjectInput.value = '';
+    renderTodos();
+    textInput.focus();
+  }
+
+  function toggleTodo(id) {
+    const t = todos.find(t => t.id === id);
+    if (!t) return;
+    t.done = !t.done;
+    if (t.done) t.completedAt = new Date().toISOString();
+    else        delete t.completedAt;
+    saveTodos();
+    renderTodos();
+  }
+
+  function deleteTodo(id) {
+    todos = todos.filter(t => t.id !== id);
+    saveTodos();
+    renderTodos();
+  }
+
+  function renderTodos() {
+    const list   = document.getElementById('todoList');
+    const active = todos.filter(t => !t.done);
+    const done   = todos.filter(t =>  t.done);
+    const all    = [...active, ...done];
+
+    if (!all.length) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;text-align:center;padding:1.5rem 0">No todos yet — add one above 📝</p>';
+      return;
+    }
+
+    list.innerHTML = all.map(t => {
+      const subjectTag = t.subject
+        ? `<div class="todo-tag">${escHtml(t.subject)}</div>`
+        : '';
+      const onClickStudy = (!t.done && (t.subject || t.text))
+        ? `studyFor('${escHtml(t.subject || '')}', '${escHtml(t.text)}')`
+        : '';
+      return `
+        <div class="todo-item${t.done ? ' done' : ''}" onclick="${onClickStudy}" title="${t.done ? '' : 'Click to work on this'}">
+          <button class="todo-check${t.done ? ' checked' : ''}"
+                  onclick="event.stopPropagation(); toggleTodo(${t.id})"
+                  title="${t.done ? 'Mark as not done' : 'Mark as done'}">
+            ${t.done ? '✓' : ''}
+          </button>
+          <div style="flex:1;min-width:0">
+            <div class="todo-text">${escHtml(t.text)}</div>
+            ${subjectTag}
+          </div>
+          <button class="todo-del"
+                  onclick="event.stopPropagation(); deleteTodo(${t.id})"
+                  title="Delete">×</button>
+        </div>`;
+    }).join('');
+  }
+
+  // ---- Upcoming Deadlines (synced from Google Calendar) ----
+  const DEADLINES = [
+    // ── Week 8 ──
+    { name: 'Stats Mobius',                      subject: 'MATH2089',  due: '2026-04-09T09:00:00+10:00', weight: '0.5%' },
+    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-04-10T09:00:00+10:00', weight: '20%' },
+    // ── Week 9 ──
+    { name: 'NM Mobius',                        subject: 'MATH2089',  due: '2026-04-13T09:00:00+10:00', weight: '1.25%' },
+    { name: 'NM Test 2',                        subject: 'MATH2089',  due: '2026-04-14T09:00:00+10:00', weight: '5%', exam: true },
+    { name: 'FCS Lab – Week 9',                 subject: 'MTRN3210',  due: '2026-04-14T23:59:00+10:00', weight: '20%' },
+    { name: 'FCS Quiz – Week 9',                subject: 'MTRN3210',  due: '2026-04-15T12:00:00+10:00', weight: '2%' },
+    { name: 'Stats Mobius',                     subject: 'MATH2089',  due: '2026-04-16T09:00:00+10:00', weight: '0.5%' },
+    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-04-17T09:00:00+10:00', weight: '20%' },
+    // ── Week 10 ──
+    { name: 'Stats Mobius',                     subject: 'MATH2089',  due: '2026-04-23T09:00:00+10:00', weight: '0.5%' },
+    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-04-24T09:00:00+10:00', weight: '20%' },
+    // ── Week 11 ──
+    { name: 'Stats Mobius',                     subject: 'MATH2089',  due: '2026-04-30T09:00:00+10:00', weight: '0.5%' },
+    { name: 'GENE1500 Startup Pitch @ MCIC',    subject: 'GENE1500',  due: '2026-04-30T10:00:00+10:00', weight: '30%', exam: true, loc: 'MCIC' },
+    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-05-01T09:00:00+10:00', weight: '20%' },
+    // ── Finals ──
+    { name: 'MATH2089 Final Exam',              subject: 'MATH2089',  due: '2026-05-02T09:00:00+10:00', weight: 'Final', exam: true },
+    { name: 'NM Mobius',                        subject: 'MATH2089',  due: '2026-05-03T09:00:00+10:00', weight: '1.25%' },
+    { name: 'MTRN3210 Final Exam',              subject: 'MTRN3210',  due: '2026-05-09T14:00:00+10:00', weight: 'Final', exam: true, loc: 'Moodle' },
+  ];
+
+  const COMPLETED_DL_KEY = 'completed_deadlines_v1';
+  function getCompletedDLs() {
+    try { return JSON.parse(localStorage.getItem(COMPLETED_DL_KEY)) || []; } catch { return []; }
+  }
+  function saveCompletedDLs(arr) { localStorage.setItem(COMPLETED_DL_KEY, JSON.stringify(arr)); }
+
+  function dlKey(d) { return d.name + '|' + d.due; }
+
+  function completeDeadline(key) {
+    const d = DEADLINES.find(x => dlKey(x) === key);
+    if (!d) return;
+    const confirmed = window.confirm(`Mark "${d.name}" as done?\n\nThis will move it to your completed list. You can undo this.`);
+    if (!confirmed) return;
+    const arr = getCompletedDLs();
+    if (!arr.includes(key)) arr.push(key);
+    saveCompletedDLs(arr);
+    renderDeadlines();
+  }
+
+  function restoreDeadline(key) {
+    const arr = getCompletedDLs().filter(k => k !== key);
+    saveCompletedDLs(arr);
+    renderDeadlines();
+  }
+
+  function renderDeadlines() {
+    const now       = new Date();
+    const done      = getCompletedDLs();
+    const list      = document.getElementById('deadlinesList');
+
+    const upcoming = DEADLINES
+      .map(d => ({ ...d, dueDate: new Date(d.due), msLeft: new Date(d.due) - now }))
+      .filter(d => d.msLeft > 0 && !done.includes(dlKey(d)))
+      .sort((a, b) => a.msLeft - b.msLeft);
+
+    const completed = DEADLINES
+      .filter(d => done.includes(dlKey(d)))
+      .map(d => ({ ...d, dueDate: new Date(d.due) }))
+      .sort((a, b) => new Date(b.due) - new Date(a.due));
+
+    let html = '';
+
+    if (!upcoming.length) {
+      html += '<p style="color:var(--muted);font-size:0.88rem;text-align:center;padding:1.5rem 0">No upcoming deadlines — you\'re all caught up! 🎉</p>';
+    } else {
+      html += upcoming.map(d => {
+        const hoursLeft = d.msLeft / 3600000;
+        const daysLeft  = d.msLeft / 86400000;
+        const urgency   = hoursLeft < 48 ? 'urgent' : hoursLeft < 96 ? 'soon' : 'upcoming';
+
+        let timeLabel;
+        if (hoursLeft < 1)        timeLabel = 'Due in < 1 hour!';
+        else if (hoursLeft < 24)  timeLabel = `${Math.floor(hoursLeft)}h left`;
+        else if (daysLeft < 2)    timeLabel = 'Due tomorrow';
+        else                      timeLabel = `${Math.floor(daysLeft)}d left`;
+
+        const dueStr = d.dueDate.toLocaleDateString('en-AU', { weekday: 'short', month: 'short', day: 'numeric' })
+                     + ' ' + d.dueDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+
+        const weightBadge = d.weight ? `<span class="dl-weight">${d.weight}</span>` : '';
+        const examBadge   = d.exam   ? `<span class="dl-weight" style="background:rgba(248,113,113,0.12);color:var(--red)">EXAM</span>` : '';
+        const key = escHtml(dlKey(d));
+
+        return `
+          <div class="dl-item ${urgency}" onclick="studyFor('${escHtml(d.subject)}', '${escHtml(d.name)}')" title="Click to study for this">
+            <div class="dl-dot ${urgency}"></div>
+            <div style="flex:1;min-width:0">
+              <div class="dl-name">${escHtml(d.name)}</div>
+              <div class="dl-subject">${escHtml(d.subject)}</div>
+            </div>
+            <div class="dl-meta">
+              <div style="display:flex;gap:0.3rem;align-items:center">${weightBadge}${examBadge}<span class="dl-badge ${urgency}">${timeLabel}</span></div>
+              <div class="dl-due">${dueStr}</div>
+            </div>
+            <button class="dl-tick-btn" onclick="event.stopPropagation();completeDeadline('${key}')" title="Mark as done">✓</button>
+          </div>`;
+      }).join('');
+    }
+
+    if (completed.length) {
+      html += `<div class="dl-completed-header">✅ Completed</div>`;
+      html += completed.map(d => {
+        const dueStr = d.dueDate.toLocaleDateString('en-AU', { weekday: 'short', month: 'short', day: 'numeric' });
+        const weightBadge = d.weight ? `<span class="dl-weight">${d.weight}</span>` : '';
+        const examBadge   = d.exam   ? `<span class="dl-weight" style="background:rgba(248,113,113,0.12);color:var(--red)">EXAM</span>` : '';
+        const key = escHtml(dlKey(d));
+        return `
+          <div class="dl-item completed">
+            <div class="dl-dot" style="background:var(--border)"></div>
+            <div style="flex:1;min-width:0">
+              <div class="dl-name">${escHtml(d.name)}</div>
+              <div class="dl-subject">${escHtml(d.subject)}</div>
+            </div>
+            <div class="dl-meta">
+              <div style="display:flex;gap:0.3rem;align-items:center">${weightBadge}${examBadge}</div>
+              <div class="dl-due">${dueStr}</div>
+            </div>
+            <button class="dl-restore-btn" onclick="event.stopPropagation();restoreDeadline('${key}')" title="Undo">↩</button>
+          </div>`;
+      }).join('');
+    }
+
+    list.innerHTML = html;
+  }
+
+  function studyFor(subject, taskName) {
+    // Pre-fill the subject and scroll to the timer
+    document.getElementById('subjectInput').value = subject;
+    document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+    // Flash the input to confirm
+    const inp = document.getElementById('subjectInput');
+    inp.style.borderColor = 'var(--accent)';
+    inp.style.boxShadow   = '0 0 0 3px rgba(124,106,247,0.2)';
+    setTimeout(() => { inp.style.borderColor = ''; inp.style.boxShadow = ''; }, 1200);
+  }
+
+  // Refresh countdown labels every minute
+  setInterval(renderDeadlines, 60000);
+
+  // ---- Timer / lunch / break persistence ----
+
+
+  function saveTimerState() {
+    localStorage.setItem(TIMER_KEY, JSON.stringify({
+      durationSecs,
+      pausedRemMs: running ? Math.max(0, pausedRemMs - (Date.now() - runStartMs)) : pausedRemMs,
+      running,
+      runStartMs:        running ? runStartMs : null,
+      sessionBeginMs,
+      cumulativePausedMs,
+      pauseStartMs,
+      subject: document.getElementById('subjectInput').value.trim(),
+      lunchActive,
+      lunchEndAt:    lunchActive   ? lunchEndAt   : null,
+      breakRunning,
+      breakEndAt:    breakRunning  ? breakEndAt   : null,
+      breakDuration: breakRunning  ? breakDuration : 0
+    }));
+  }
+
+  function restoreTimerState() {
+    const raw = localStorage.getItem(TIMER_KEY);
+    if (!raw) return;
+    try {
+      const s = JSON.parse(raw);
+      durationSecs = s.durationSecs || 30 * 60;
+
+      // Restore subject
+      if (s.subject) document.getElementById('subjectInput').value = s.subject;
+
+      // Restore duration picker display
+      const mins = Math.round(durationSecs / 60);
+      document.getElementById('durInput').value = mins;
+      document.querySelectorAll('.preset-btn').forEach(b =>
+        b.classList.toggle('active', parseInt(b.textContent) === mins));
+
+      if (s.sessionBeginMs)     sessionBeginMs     = s.sessionBeginMs;
+      if (s.cumulativePausedMs) cumulativePausedMs = s.cumulativePausedMs;
+      if (s.pauseStartMs)       pauseStartMs       = s.pauseStartMs;
+
+      if (s.running && s.runStartMs) {
+        // Was running — work out how much time passed while page was closed
+        const elapsed = Date.now() - s.runStartMs;
+        pausedRemMs = Math.max(0, s.pausedRemMs - elapsed);
+        remaining   = Math.round(pausedRemMs / 1000);
+        if (remaining <= 0) {
+          // Session finished while away — log it, earn break credit, and reset
+          const endTime   = new Date();
+          const startTime = sessionBeginMs ? new Date(sessionBeginMs) : new Date(Date.now() - durationSecs * 1000);
+          const pausedSecs = Math.round(cumulativePausedMs / 1000);
+          earnBreak(Math.max(0, durationSecs - pausedSecs));
+          pausedRemMs = durationSecs * 1000;
+          remaining   = durationSecs;
+          const sub = s.subject || 'General';
+          const logs = getLogs();
+          logs.unshift({ subject: sub, seconds: durationSecs, date: endTime.toISOString(), startDate: startTime.toISOString() });
+          saveLogs(logs);
+          sessionBeginMs = null; cumulativePausedMs = 0;
+          renderLog(); updateStats();
+        } else {
+          // Resume from where it left off
+          runStartMs = Date.now();
+          running    = true;
+          timerInterval = setInterval(tick, 250);
+          document.getElementById('startBtn').disabled = true;
+          document.getElementById('pauseBtn').disabled  = false;
+          document.getElementById('stopBtn').disabled  = false;
+        }
+      } else {
+        pausedRemMs = s.pausedRemMs ?? durationSecs * 1000;
+        remaining   = Math.round(pausedRemMs / 1000);
+        // Restore paused UI if session was mid-pause
+        if (pauseStartMs) {
+          document.getElementById('startBtn').disabled = false;
+          document.getElementById('pauseBtn').disabled  = true;
+          document.getElementById('stopBtn').disabled  = false;
+          showPausePopup();
+        }
+      }
+
+      document.getElementById('display').textContent = fmt(remaining);
+      updateProgress(); updatePipDisplay();
+
+      // Restore lunch — use end timestamp so time-while-away is accounted for
+      if (s.lunchActive && s.lunchEndAt) {
+        const remSecs = Math.round((s.lunchEndAt - Date.now()) / 1000);
+        if (remSecs > 0) {
+          lunchActive    = true;
+          lunchEndAt     = s.lunchEndAt;
+          lunchRemaining = remSecs;
+          document.getElementById('lunchBar').classList.add('visible');
+          document.getElementById('lunchBtn').classList.add('active');
+          document.getElementById('lunchTime').textContent = fmtLunch(lunchRemaining);
+          lunchInterval = setInterval(() => {
+            lunchRemaining = Math.max(0, Math.round((lunchEndAt - Date.now()) / 1000));
+            document.getElementById('lunchTime').textContent = fmtLunch(lunchRemaining);
+            if (lunchRemaining <= 0) endLunch(false);
+          }, 1000);
+        }
+      }
+
+      // Restore break — always resume exactly where it was (including overtime)
+      // Never bank on restore; only bank when the user actually ends the break
+      if (s.breakRunning && s.breakEndAt) {
+        breakRunning  = true;
+        breakDuration = s.breakDuration || 0;
+        breakEndAt    = s.breakEndAt;
+        breakRemaining = Math.max(0, Math.round((breakEndAt - Date.now()) / 1000));
+        document.getElementById('breakBar').classList.add('visible');
+        document.getElementById('breakBtn').classList.add('active');
+        document.getElementById('breakTime').style.display         = '';
+        document.getElementById('breakCancelBtn').style.display    = goalActive ? 'none' : '';
+        document.getElementById('breakEndLockInBtn').style.display = goalActive ? ''     : 'none';
+        // Set initial display (may already be in overtime)
+        const initSecsLeft = Math.round((breakEndAt - Date.now()) / 1000);
+        if (initSecsLeft >= 0) {
+          document.getElementById('breakTime').textContent = fmtLunch(breakRemaining);
+          document.getElementById('breakLabel').textContent =
+            `Break — ${Math.floor(breakDuration/60)}:${String(breakDuration%60).padStart(2,'0')} available`;
+        } else {
+          const ov = Math.abs(initSecsLeft);
+          document.getElementById('breakTime').style.color = '#f43f5e';
+          document.getElementById('breakTime').textContent = `+${Math.floor(ov/60)}:${String(ov%60).padStart(2,'0')}`;
+          document.getElementById('breakLabel').textContent = '☠️ Over break bank';
+        }
+        breakInterval = setInterval(() => {
+          const secsLeft = Math.round((breakEndAt - Date.now()) / 1000);
+          breakRemaining = Math.max(0, secsLeft);
+          if (secsLeft >= 0) {
+            document.getElementById('breakTime').style.color = '#60a5fa';
+            document.getElementById('breakTime').textContent = fmtLunch(breakRemaining);
+            document.getElementById('breakLabel').textContent =
+              `Break — ${Math.floor(breakDuration/60)}:${String(breakDuration%60).padStart(2,'0')} available`;
+          } else {
+            const ov = Math.abs(secsLeft);
+            document.getElementById('breakTime').style.color = '#f43f5e';
+            document.getElementById('breakTime').textContent = `+${Math.floor(ov/60)}:${String(ov%60).padStart(2,'0')}`;
+            document.getElementById('breakLabel').textContent = '☠️ Over break bank';
+          }
+          updateWastedDisplay();
+          if (secsLeft % 10 === 0) saveTimerState();
+        }, 1000);
+      }
+    } catch(e) { localStorage.removeItem(TIMER_KEY); }
+  }
+
+  // ---- Init ----
+  checkAutoReset(); // auto-reset day if configured time has passed
+  restoreGoalState();
+  restoreTimerState();
+  if (goalActive && !running && !breakRunning && liveBreakAvailSecs() > 0) toggleBreak(); // resume break if mid lock-in
+  updateBreakBtn();
+  updateWastedDisplay();
+  renderLog();
+  updateStats();
+  renderReports();
+
+  // Auto-fill from planner "Lock In" or subject tag clicks
+  const plannedLock    = localStorage.getItem('planner_lockUntil');
+  const plannedSubject = localStorage.getItem('planner_subject');
+  if (plannedLock) {
+    localStorage.removeItem('planner_lockUntil');
+    toggleLockIn(); // activate lock-in immediately
+  }
+  if (plannedSubject) {
+    localStorage.removeItem('planner_subject');
+    document.getElementById('subjectInput').value = plannedSubject;
+  }
+  // Init ratio UI from saved config
+  renderRatioLabel();
+  renderTodos();
+  renderDeadlines();
+
+  // ── Session Reports ──
+  const SESSION_REPORTS_KEY = 'session_reports_v1';
+
+  function getSessionReports() {
+    try { return JSON.parse(localStorage.getItem(SESSION_REPORTS_KEY)) || {}; } catch { return {}; }
+  }
+  function saveSessionReport(logIndex, tasks, learnings) {
+    const reports = getSessionReports();
+    // Key by log index + date for stability
+    const logs = getLogs();
+    const entry = logs[logIndex];
+    if (!entry) return;
+    const key = entry.date + '_' + logIndex;
+    reports[key] = { tasks: tasks.trim(), learnings: learnings.trim(), savedAt: new Date().toISOString() };
+    localStorage.setItem(SESSION_REPORTS_KEY, JSON.stringify(reports));
+    renderLog();
+  }
+  function getReportKey(entry, index) {
+    return entry.date + '_' + index;
+  }
+
+  // ── Session Report Modal ──
+  let srModal = null;
+
+  function openSessionReport(logIndex) {
+    if (srModal) srModal.remove();
+
+    const logs    = getLogs();
+    const entry   = logs[logIndex];
+    if (!entry) return;
+
+    const reports = getSessionReports();
+    const key     = getReportKey(entry, logIndex);
+    const existing = reports[key] || null;
+
+    const timeStr = new Date(entry.date).toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+    const durStr  = fmtDur(entry.seconds);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'sr-overlay';
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+    function buildView() {
+      return `
+        <div class="sr-header">
+          <div>
+            <div class="sr-title">${escHtml(entry.subject)}</div>
+            <div class="sr-meta">${durStr} · ${timeStr}${entry.pausedSecs > 30 ? ` · ⏸ ${fmtDur(entry.pausedSecs)} paused` : ''}</div>
+          </div>
+          <button class="sr-close" onclick="this.closest('.sr-overlay').remove()">×</button>
+        </div>
+
+        <div class="sr-section">
+          <div class="sr-label">✅ Tasks completed</div>
+          <div class="sr-view ${existing?.tasks ? '' : 'sr-view-empty'}">${existing?.tasks ? escHtml(existing.tasks) : 'Nothing logged yet.'}</div>
+        </div>
+        <div class="sr-section">
+          <div class="sr-label">💡 What I learnt</div>
+          <div class="sr-view ${existing?.learnings ? '' : 'sr-view-empty'}">${existing?.learnings ? escHtml(existing.learnings) : 'Nothing logged yet.'}</div>
+        </div>
+
+        <div class="sr-actions">
+          <button class="sr-edit-btn" onclick="switchToEdit(${logIndex})">✏️ Edit</button>
+          <button class="btn-sr-cancel" onclick="this.closest('.sr-overlay').remove()">Close</button>
+        </div>`;
+    }
+
+    function buildEdit() {
+      return `
+        <div class="sr-header">
+          <div>
+            <div class="sr-title">${escHtml(entry.subject)}</div>
+            <div class="sr-meta">${durStr} · ${timeStr}${entry.pausedSecs > 30 ? ` · ⏸ ${fmtDur(entry.pausedSecs)} paused` : ''}</div>
+          </div>
+          <button class="sr-close" onclick="this.closest('.sr-overlay').remove()">×</button>
+        </div>
+
+        <div class="sr-section">
+          <div class="sr-label">✅ Tasks completed</div>
+          <textarea class="sr-textarea" id="srTasks" placeholder="What did you get done this session?">${escHtml(existing?.tasks || '')}</textarea>
+        </div>
+        <div class="sr-section">
+          <div class="sr-label">💡 What I learnt</div>
+          <textarea class="sr-textarea" id="srLearnings" placeholder="Any key concepts, insights, or breakthroughs?">${escHtml(existing?.learnings || '')}</textarea>
+        </div>
+
+        <div class="sr-actions">
+          <button class="btn-sr-cancel" onclick="this.closest('.sr-overlay').remove()">Cancel</button>
+          <button class="btn-sr-save" onclick="submitSessionReport(${logIndex})">Save</button>
+        </div>`;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'sr-modal';
+    modal.innerHTML = existing ? buildView() : buildEdit();
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    srModal = overlay;
+
+    // Focus first textarea if editing
+    if (!existing) setTimeout(() => overlay.querySelector('#srTasks')?.focus(), 50);
+
+    // Expose helpers to inline onclick
+    window.switchToEdit = idx => {
+      modal.innerHTML = buildEdit();
+      setTimeout(() => modal.querySelector('#srTasks')?.focus(), 50);
+    };
+  }
+
+  window.submitSessionReport = function(logIndex) {
+    const tasks     = document.getElementById('srTasks')?.value     || '';
+    const learnings = document.getElementById('srLearnings')?.value || '';
+    saveSessionReport(logIndex, tasks, learnings);
+    if (srModal) srModal.remove();
+  };
+
+  window.openSessionReport = openSessionReport;
+</script>
+</body>
+</html>
