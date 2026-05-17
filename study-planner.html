@@ -19,9 +19,6 @@
       --red:     #f87171;
       --orange:  #fb923c;
       --border:  #2d3251;
-      --math:    #a78bfa;
-      --mtrn:    #f87171;
-      --gene:    #34d399;
     }
 
     body {
@@ -119,9 +116,6 @@
     .wa-dot { width: 27px; height: 27px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
               font-size: 0.58rem; font-weight: 700; background: var(--surface2); color: var(--muted); }
     .wa-dot.on { color: #fff; }
-    .wa-health-score { font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem; }
-    .wa-health-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.77rem; margin-bottom: 0.18rem; }
-    .wa-health-count { color: var(--muted); font-size: 0.71rem; }
     .wa-fun-verdict { font-size: 0.83rem; font-weight: 600; margin-bottom: 0.45rem; }
     .wa-fun-list { display: flex; flex-direction: column; gap: 0.28rem; }
     .wa-fun-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.77rem;
@@ -510,9 +504,7 @@
       transition: opacity 0.15s;
     }
     .subject-tag:hover { opacity: 0.8; }
-    .tag-math { background: rgba(167,139,250,0.15); color: var(--math); border-color: rgba(167,139,250,0.3); }
-    .tag-mtrn { background: rgba(248,113,113,0.15); color: var(--mtrn); border-color: rgba(248,113,113,0.3); }
-    .tag-gene { background: rgba(52,211,153,0.15); color: var(--gene); border-color: rgba(52,211,153,0.3); }
+    .subject-tag-chip { border: 1px solid; transition: opacity 0.15s; }
 
     .empty-day { color: var(--muted); font-size: 0.88rem; padding: 0.5rem 0; }
 
@@ -529,6 +521,9 @@
   <a class="nav-link active" href="study-planner.html">📅 Planner</a>
   <span class="nav-sep">|</span>
   <a class="nav-link" href="study-actionables.html">✅ Actionables</a>
+  <span style="flex:1"></span>
+  <button onclick="showPlannerInfo()" title="How does the planner work?" style="padding:0.4rem 0.7rem;border-radius:8px;font-size:0.82rem;background:transparent;color:var(--muted);border:1px solid var(--border);cursor:pointer;margin-right:0.25rem">ℹ</button>
+  <button onclick="openClassSetup()" style="padding:0.4rem 0.9rem;border-radius:8px;font-size:0.82rem;font-weight:600;background:var(--surface);color:var(--accent2);border:1px solid var(--border);cursor:pointer">⚙ My Classes</button>
 </nav>
 
 <div class="outer-layout">
@@ -562,13 +557,9 @@
     <div class="card">
       <h2>Today's Classes</h2>
       <div class="class-list" id="classList"></div>
-      <div style="margin-top:1rem;">
+      <div style="margin-top:1rem;" id="subjectTagsWrap">
         <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">Quick-fill subject:</div>
-        <div class="subject-tags">
-          <span class="subject-tag tag-math" onclick="fillSubject('MATH2089')">MATH2089</span>
-          <span class="subject-tag tag-mtrn" onclick="fillSubject('MTRN3210')">MTRN3210</span>
-          <span class="subject-tag tag-gene" onclick="fillSubject('GENE1500')">GENE1500</span>
-        </div>
+        <div class="subject-tags" id="subjectTagsRow"></div>
       </div>
     </div>
 
@@ -600,38 +591,44 @@
 </div><!-- /outer-layout -->
 
 <script>
-  // ── Timetable (hardcoded from your UNSW calendar) ──
-  // day: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-  const TIMETABLE = {
-    1: [ // Monday
-      { code:'MATH2089', name:'Numerical Methods Lecture', start:'10:00', end:'12:00', loc:'Online',           color:'var(--math)' },
-      { code:'MTRN3210', name:'Control Systems Lecture',   start:'11:00', end:'13:00', loc:'Colombo Theatre A', color:'var(--mtrn)' }
-    ],
-    2: [ // Tuesday
-      { code:'MTRN3210', name:'Control Systems Lecture',   start:'09:00', end:'11:00', loc:'Colombo Theatre A',          color:'var(--mtrn)' },
-      { code:'MATH2089', name:'Numerical Methods Tutorial',start:'09:00', end:'10:00', loc:'H13 Lawrence East G12A',     color:'var(--math)', isExam:false },
-      { code:'MTRN3210', name:'Control Systems Lab',       start:'11:00', end:'13:00', loc:'Willis Annexe MTRN Lab 213', color:'var(--mtrn)' }
-    ],
-    3: [ // Wednesday
-      { code:'MTRN3210', name:'Control Systems Workshop', start:'09:00', end:'11:00', loc:'Mathews Theatre D',       color:'var(--mtrn)' },
-      { code:'MATH2089', name:'Numerical Methods Lecture',start:'11:00', end:'12:00', loc:'Online',                  color:'var(--math)' },
-      { code:'MATH2089', name:'Numerical Methods Tutorial',start:'13:00', end:'14:00', loc:'H13 Lawrence East G12A', color:'var(--math)' }
-    ],
-    4: [ // Thursday
-      { code:'GENE1500', name:'Creative Entrepreneurship Lecture', start:'09:00', end:'10:00', loc:'Tyree Energy Technology LG07', color:'var(--gene)' },
-      { code:'MATH2089', name:'Numerical Methods Lecture',         start:'09:00', end:'10:00', loc:'Online',                      color:'var(--math)' },
-      { code:'GENE1500', name:'Creative Entrepreneurship Tutorial',start:'11:00', end:'13:00', loc:'Library 176A',                color:'var(--gene)' },
-      { code:'MATH2089', name:'Numerical Methods Tutorial',        start:'13:00', end:'14:00', loc:'Online',                     color:'var(--math)' }
-    ],
-    5: [], // Friday
-    6: [], // Saturday
-    0: []  // Sunday
-  };
+  // ── Timetable — loaded from localStorage (user-editable) ──
+  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  // UNSW break / flexibility weeks — no regular classes run during these
-  const BREAK_WEEKS = [
-    { start: '2026-03-23', end: '2026-03-29', label: 'Flexibility Week' },
-  ];
+  const TIMETABLE_KEY   = 'user_timetable_v1';
+  const BREAK_WEEKS_KEY = 'user_break_weeks_v1';
+  const DEADLINES_KEY   = 'user_deadlines_v1';
+
+  function loadTimetable() {
+    try { return JSON.parse(localStorage.getItem(TIMETABLE_KEY)) || {0:[],1:[],2:[],3:[],4:[],5:[],6:[]}; }
+    catch(e) { return {0:[],1:[],2:[],3:[],4:[],5:[],6:[]}; }
+  }
+  function saveTimetable(tt) { localStorage.setItem(TIMETABLE_KEY, JSON.stringify(tt)); }
+
+  function loadBreakWeeks() {
+    try { return JSON.parse(localStorage.getItem(BREAK_WEEKS_KEY)) || []; }
+    catch(e) { return []; }
+  }
+  function saveBreakWeeks(bw) { localStorage.setItem(BREAK_WEEKS_KEY, JSON.stringify(bw)); }
+
+  let TIMETABLE   = loadTimetable();
+  let BREAK_WEEKS = loadBreakWeeks();
+
+  // Special one-off events — stored in localStorage by tracker's deadline system
+  const SPECIAL = {};
+
+  // Deadlines — derived from user_deadlines_v1 (shared with tracker)
+  function loadPlannerDeadlines() {
+    try {
+      return (JSON.parse(localStorage.getItem(DEADLINES_KEY)) || []).map(d => ({
+        label:   d.name,
+        date:    d.due ? d.due.split('T')[0] : '',
+        subject: d.subject || '',
+        loc:     d.loc || '',
+        time:    d.due ? new Date(d.due).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''
+      }));
+    } catch(e) { return []; }
+  }
+  let DEADLINES = loadPlannerDeadlines();
 
   function isBreakWeek(date) {
     const ds = dateStr(date);
@@ -642,22 +639,6 @@
     const b = BREAK_WEEKS.find(b => ds >= b.start && ds <= b.end);
     return b ? b.label : null;
   }
-
-  // One-time special events (YYYY-MM-DD) — synced from Google Calendar
-  const SPECIAL = {
-    '2026-03-27': [
-      { code:'🍺', name:'Pub Crawl', start:'19:00', end:'23:00', loc:'', color:'#fbbf24', isSocial:true }
-    ],
-    '2026-03-31': [
-      { code:'MATH2089', name:'MATH2089 EXAM ⚠️', start:'09:00', end:'10:00',
-        loc:'H13 Lawrence East G12A', color:'var(--red)', isExam:true }
-    ]
-  };
-
-  // Upcoming deadlines / exams to flag
-  const DEADLINES = [
-    { label:'MATH2089 Exam', date:'2026-03-31', subject:'MATH2089', loc:'H13 Lawrence East G12A', time:'9:00 AM' }
-  ];
 
   // Skipped class events: { 'YYYY-MM-DD': ['code|origStart', ...] }
   const SKIPPED_KEY = 'skipped_events_v1';
@@ -685,11 +666,15 @@
   const todayEvents = getSchedule(today);
 
   // ── Prep Blocks ──
-  const PREP_BLOCKS = [
-    { id:'breakfast', name:'Breakfast + Dress Up', emoji:'🌅', durationMins:90,  color:'#f59e0b', code:'🌅 Prep'  },
-    { id:'lunch',     name:'Lunch Break',          emoji:'🍽️', durationMins:60,  color:'#34d399', code:'🍽️ Lunch' },
-    { id:'gym',       name:'Gym',                  emoji:'💪', durationMins:60,  color:'#60a5fa', code:'💪 Gym'   },
+  const DEFAULT_PREP_BLOCKS = [
+    { id:'breakfast', name:'Breakfast + Morning Prep', emoji:'🌅', durationMins:90,  color:'#f59e0b', code:'🌅 Prep'  },
+    { id:'lunch',     name:'Lunch Break',              emoji:'🍽️', durationMins:60,  color:'#34d399', code:'🍽️ Lunch' },
+    { id:'gym',       name:'Gym',                      emoji:'💪', durationMins:60,  color:'#60a5fa', code:'💪 Gym'   },
   ];
+  const HIDDEN_PREP_KEY = 'hidden_prep_blocks_v1';
+  function getHiddenPrep() { try { return JSON.parse(localStorage.getItem(HIDDEN_PREP_KEY)) || []; } catch(e) { return []; } }
+  function saveHiddenPrep(arr) { localStorage.setItem(HIDDEN_PREP_KEY, JSON.stringify(arr)); }
+  const PREP_BLOCKS = DEFAULT_PREP_BLOCKS.filter(b => !getHiddenPrep().includes(b.id));
 
   function skipEvent(date, ev) {
     const ds = dateStr(date);
@@ -817,9 +802,13 @@
     return [...getSchedule(selectedDay), ...getPrepEvents()];
   }
 
-  // Day timeline window
-  const DAY_START = 7;   // 7am
-  const DAY_END   = 25;  // 1am (next day)
+  // Day timeline window (user-configurable)
+  const TL_RANGE_KEY = 'planner_tl_range_v1';
+  function loadTlRange() { try { return JSON.parse(localStorage.getItem(TL_RANGE_KEY)) || {start:7,end:25}; } catch(e) { return {start:7,end:25}; } }
+  function saveTlRange(s,e) { localStorage.setItem(TL_RANGE_KEY, JSON.stringify({start:s,end:e})); }
+  let _tlRange = loadTlRange();
+  let DAY_START = _tlRange.start;
+  let DAY_END   = _tlRange.end;
 
   // ── Helpers ──
   function toMins(t) {
@@ -1041,6 +1030,28 @@
                     : b.type === 'other'  ? '<span class="prep-chip-type">OTHER</span>'
                     : '';
       chip.innerHTML = `${b.emoji} ${b.name} <span class="prep-chip-dur">${durLabel}</span>${typeTag}`;
+
+      // Delete button for fixed prep blocks (hide them)
+      if (!isCustom && !placed) {
+        const del = document.createElement('button');
+        del.className = 'prep-chip-del';
+        del.textContent = '×';
+        del.title = 'Remove this block';
+        del.onclick = e => {
+          e.stopPropagation();
+          const hidden = getHiddenPrep();
+          if (!hidden.includes(b.id)) hidden.push(b.id);
+          saveHiddenPrep(hidden);
+          // Remove from in-memory PREP_BLOCKS
+          const idx = PREP_BLOCKS.findIndex(pb => pb.id === b.id);
+          if (idx !== -1) PREP_BLOCKS.splice(idx, 1);
+          // Remove any placements for this block
+          Object.keys(allPlacements).forEach(ds => delete allPlacements[ds][b.id]);
+          localStorage.setItem(PLACEMENTS_KEY, JSON.stringify(allPlacements));
+          renderAll();
+        };
+        chip.appendChild(del);
+      }
 
       // Delete button for custom tasks (only when not placed)
       if (isCustom && !placed) {
@@ -1438,6 +1449,7 @@
             const block = getAllBlocks().find(b => b.id === data);
             if (!block) return;
             setPlacement(data, slotStart);
+            showDragTutorial();
             renderAll();
           }
         });
@@ -1534,14 +1546,6 @@
                   : prodPct >= 35  ? '#fb923c' : '#f87171';
     const pVerdict = prodPct == null ? '' : prodPct >= 90 ? 'Locked in 🔥' : prodPct >= 70 ? 'Solid week 💪' : prodPct >= 40 ? 'Getting there' : 'Rough week 😴';
 
-    // Health
-    const gymDays   = weekData.filter(d => d.hadGym).length;
-    const bfastDays = weekData.filter(d => d.hadBfast).length;
-    const lunchDays = weekData.filter(d => d.hadLunch).length;
-    const healthPct = Math.round((gymDays + bfastDays + lunchDays) / 21 * 100);
-    const hColor    = healthPct >= 65 ? '#34d399' : healthPct >= 35 ? '#fb923c' : '#f87171';
-    const hVerdict  = healthPct >= 75 ? 'Thriving 🌟' : healthPct >= 50 ? 'Decent' : healthPct >= 25 ? 'Could be better' : 'Take care of yourself 🫶';
-
     // Fun & Social
     const allFun = weekData.flatMap(d => [
       ...d.socialEvts.map(e => ({ emoji: e.code || '🎉', name: e.name, day: d.longName })),
@@ -1585,29 +1589,6 @@
       </div>
 
       <div class="wa-section">
-        <div class="wa-section-title">💪 Health</div>
-        <div class="wa-score-row">
-          <span class="wa-health-score" style="color:${hColor}">${healthPct}%</span>
-          <span class="wa-verdict">${hVerdict}</span>
-        </div>
-        ${bar(healthPct, hColor)}
-        <div style="margin-top:0.55rem;display:flex;flex-direction:column;gap:0.45rem;">
-          <div>
-            <div class="wa-health-row"><span class="wa-health-label">🏋️ Gym</span><span class="wa-health-count">${gymDays}/7</span></div>
-            ${dots(d => d.hadGym, '#60a5fa')}
-          </div>
-          <div>
-            <div class="wa-health-row"><span class="wa-health-label">🌅 Breakfast</span><span class="wa-health-count">${bfastDays}/7</span></div>
-            ${dots(d => d.hadBfast, '#f59e0b')}
-          </div>
-          <div>
-            <div class="wa-health-row"><span class="wa-health-label">🍽️ Lunch</span><span class="wa-health-count">${lunchDays}/7</span></div>
-            ${dots(d => d.hadLunch, '#34d399')}
-          </div>
-        </div>
-      </div>
-
-      <div class="wa-section">
         <div class="wa-section-title">🎉 Social & Fun</div>
         <div class="wa-fun-verdict">${funVerdict}</div>
         ${allFun.length === 0
@@ -1622,7 +1603,34 @@
     </div>`;
   }
 
+  // ── Subject quick-fill tags (dynamic from timetable) ──
+  function renderSubjectTags() {
+    const row  = document.getElementById('subjectTagsRow');
+    const wrap = document.getElementById('subjectTagsWrap');
+    if (!row) return;
+    const tt = loadTimetable();
+    // Collect unique codes + their color
+    const seen = {};
+    Object.values(tt).forEach(day => day.forEach(cls => {
+      if (!seen[cls.code]) seen[cls.code] = cls.color || '#a78bfa';
+    }));
+    const codes = Object.keys(seen);
+    if (!codes.length) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+    row.innerHTML = codes.map(code => {
+      const c = seen[code];
+      const bg = c.startsWith('#') ? c + '22' : 'rgba(124,106,247,0.12)';
+      return `<span class="subject-tag subject-tag-chip"
+        style="background:${bg};color:${c};border-color:${c}44"
+        onclick="fillSubject('${escHtml(code)}')">${escHtml(code)}</span>`;
+    }).join('');
+  }
+
   // ── Initial render ──
+  renderSubjectTags();
   renderAll();
 
   // ── Lock In ──
@@ -1650,6 +1658,341 @@
       alert(`${name}\n\n${lines.join('\n')}\n\n${freeLines.join('\n')}`);
     }
   }
+  // ── First-drag tutorial ──
+  function showDragTutorial() {
+    if (localStorage.getItem('planner_drag_tutorial_shown')) return;
+    localStorage.setItem('planner_drag_tutorial_shown', '1');
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);z-index:600;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:1.1rem 1.4rem;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:fadeIn 0.3s ease';
+    el.innerHTML = `
+      <div style="font-size:0.8rem;font-weight:700;color:var(--accent2);margin-bottom:0.5rem">💡 Quick tip</div>
+      <div style="font-size:0.83rem;color:var(--text);line-height:1.6;margin-bottom:0.6rem">
+        <strong>Drag blocks</strong> anywhere on the timeline to reposition them.<br>
+        <strong>Drag the bottom edge ↕</strong> of any block to make it longer or shorter.
+      </div>
+      <button onclick="this.closest('div[style]').remove()"
+        style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0.38rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer">Got it</button>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 8000);
+  }
+
+  // ── Class Setup Modal ──
+  const CLASS_COLORS = ['#a78bfa','#f87171','#34d399','#60a5fa','#fb923c','#f472b6','#facc15','#2dd4bf'];
+  let selectedClassColor = CLASS_COLORS[0];
+
+  function restoreDefaultBlocks() {
+    saveHiddenPrep([]);
+    PREP_BLOCKS.length = 0;
+    DEFAULT_PREP_BLOCKS.forEach(b => PREP_BLOCKS.push(b));
+    renderAll();
+  }
+
+  function saveTlRangeSetting() {
+    const s = parseInt(document.getElementById('tlStart').value);
+    const e = parseInt(document.getElementById('tlEnd').value);
+    if (e <= s) { alert('End must be after start.'); return; }
+    saveTlRange(s, e);
+  }
+
+  function openClassSetup() {
+    document.getElementById('classSetupModal').style.display = 'flex';
+    // Populate timeline range dropdowns
+    const r = loadTlRange();
+    const tlS = document.getElementById('tlStart');
+    const tlE = document.getElementById('tlEnd');
+    if (tlS) tlS.value = String(r.start);
+    if (tlE) tlE.value = String(r.end);
+    renderClassSetupModal();
+  }
+  function closeClassSetup() {
+    document.getElementById('classSetupModal').style.display = 'none';
+    TIMETABLE   = loadTimetable();
+    BREAK_WEEKS = loadBreakWeeks();
+    DEADLINES   = loadPlannerDeadlines();
+    const r = loadTlRange();
+    DAY_START = r.start;
+    DAY_END   = r.end;
+    // Reload prep blocks in case user removed some
+    const hidden = getHiddenPrep();
+    PREP_BLOCKS.length = 0;
+    DEFAULT_PREP_BLOCKS.filter(b => !hidden.includes(b.id)).forEach(b => PREP_BLOCKS.push(b));
+    renderSubjectTags();
+    renderAll();
+  }
+
+  function renderClassSetupModal() {
+    // Color picker
+    const picker = document.getElementById('csColorPicker');
+    if (picker) picker.innerHTML = CLASS_COLORS.map(c =>
+      `<div onclick="selectedClassColor='${c}';renderClassSetupModal()"
+        style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;
+               border:3px solid ${c===selectedClassColor?'#fff':'transparent'};
+               box-sizing:border-box;transform:${c===selectedClassColor?'scale(1.25)':'scale(1)'};transition:transform 0.1s"></div>`
+    ).join('');
+
+    // Classes list grouped by day
+    const tt   = loadTimetable();
+    const days = [{v:1,l:'Monday'},{v:2,l:'Tuesday'},{v:3,l:'Wednesday'},{v:4,l:'Thursday'},{v:5,l:'Friday'},{v:6,l:'Saturday'},{v:0,l:'Sunday'}];
+    const clEl = document.getElementById('csClassList');
+    let html = '', hasAny = false;
+    days.forEach(({v,l}) => {
+      const cls = tt[v] || [];
+      if (!cls.length) return;
+      hasAny = true;
+      html += `<div style="margin-bottom:0.75rem">
+        <div style="font-size:0.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem">${l}</div>`;
+      cls.forEach((c,i) => {
+        html += `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;
+                             background:var(--surface2);border-radius:8px;margin-bottom:0.3rem;border-left:3px solid ${c.color}">
+          <div style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.85rem;font-weight:600;color:${c.color}">${escHtml(c.code||c.name)}</div>
+            <div style="font-size:0.72rem;color:var(--muted)">${escHtml(c.name)} · ${c.start}–${c.end}${c.loc?' · '+escHtml(c.loc):''}</div>
+          </div>
+          <button onclick="deleteClassEntry(${v},${i})"
+            style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.1rem 0.35rem;border-radius:4px"
+            title="Remove">×</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    if (!hasAny) html = `<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem 0">No classes yet — add your first class above.</div>`;
+    if (clEl) clEl.innerHTML = html;
+
+    // Break weeks list
+    const bwEl = document.getElementById('bwList');
+    const bw   = loadBreakWeeks();
+    if (bwEl) {
+      bwEl.innerHTML = !bw.length
+        ? `<div style="color:var(--muted);font-size:0.8rem;font-style:italic">No break weeks added.</div>`
+        : bw.map((w,i) => `
+          <div style="display:flex;align-items:center;gap:0.6rem;padding:0.4rem 0.7rem;
+                      background:var(--surface2);border-radius:8px;margin-bottom:0.3rem">
+            <div style="flex:1;font-size:0.82rem">${w.start} – ${w.end}
+              <span style="color:var(--muted);margin-left:0.4rem">${escHtml(w.label||'')}</span></div>
+            <button onclick="deleteBreakWeek(${i})"
+              style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:0.1rem 0.35rem">×</button>
+          </div>`).join('');
+    }
+  }
+
+  function addClassEntry() {
+    const day   = parseInt(document.getElementById('csDay').value);
+    const code  = document.getElementById('csCode').value.trim();
+    const name  = document.getElementById('csName').value.trim();
+    const start = document.getElementById('csStart').value;
+    const end   = document.getElementById('csEnd').value;
+    const loc   = document.getElementById('csLoc').value.trim();
+    if (!name)  { document.getElementById('csName').focus(); return; }
+    if (!start) { document.getElementById('csStart').focus(); return; }
+    if (!end)   { document.getElementById('csEnd').focus(); return; }
+    if (start >= end) { alert('End time must be after start time.'); return; }
+    const tt = loadTimetable();
+    if (!tt[day]) tt[day] = [];
+    tt[day].push({ code: code || name, name, start, end, loc, color: selectedClassColor, origStart: start });
+    tt[day].sort((a,b) => a.start.localeCompare(b.start));
+    saveTimetable(tt);
+    document.getElementById('csCode').value  = '';
+    document.getElementById('csName').value  = '';
+    document.getElementById('csStart').value = '';
+    document.getElementById('csEnd').value   = '';
+    document.getElementById('csLoc').value   = '';
+    renderClassSetupModal();
+  }
+
+  function deleteClassEntry(day, idx) {
+    const tt = loadTimetable();
+    if (tt[day]) { tt[day].splice(idx, 1); saveTimetable(tt); }
+    renderClassSetupModal();
+  }
+
+  function addBreakWeek() {
+    const start = document.getElementById('bwStart').value;
+    const end   = document.getElementById('bwEnd').value;
+    const label = document.getElementById('bwLabel').value.trim();
+    if (!start || !end) { alert('Please enter both a start and end date.'); return; }
+    if (start > end) { alert('End date must be after start date.'); return; }
+    const bw = loadBreakWeeks();
+    bw.push({ start, end, label: label || 'Break Week' });
+    bw.sort((a,b) => a.start.localeCompare(b.start));
+    saveBreakWeeks(bw);
+    document.getElementById('bwStart').value = '';
+    document.getElementById('bwEnd').value   = '';
+    document.getElementById('bwLabel').value = '';
+    renderClassSetupModal();
+  }
+
+  function deleteBreakWeek(idx) {
+    const bw = loadBreakWeeks();
+    bw.splice(idx, 1);
+    saveBreakWeeks(bw);
+    renderClassSetupModal();
+  }
+
+  function showPlannerInfo() {
+    const existing = document.getElementById('plannerInfoModal');
+    if (existing) { existing.style.display = 'flex'; return; }
+    const modal = document.createElement('div');
+    modal.id = 'plannerInfoModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(5px);z-index:600;display:flex;align-items:center;justify-content:center;padding:1rem';
+    modal.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.75rem;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem">
+          <h2 style="margin:0;font-size:1.1rem;color:var(--text)">📅 How the Planner Works</h2>
+          <button onclick="document.getElementById('plannerInfoModal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:0.2rem 0.5rem">✕</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.1rem;font-size:0.88rem;line-height:1.6;color:var(--text)">
+
+          <div style="background:var(--surface2);border-radius:12px;padding:1rem 1.1rem">
+            <div style="font-weight:700;margin-bottom:0.45rem;color:var(--accent2)">🧱 The Blocks Palette</div>
+            <div>On the left side of the timetable you'll see a palette of blocks — <strong>fixed prep blocks</strong> (like Breakfast or Gym) and a <strong>custom task section</strong> where you can create your own. Each block has a colour and type:</div>
+            <ul style="margin:0.5rem 0 0 1rem;display:flex;flex-direction:column;gap:0.25rem">
+              <li><strong style="color:#a78bfa">Study</strong> — counts toward your daily study total in Week in Review</li>
+              <li><strong style="color:#60a5fa">Other</strong> — productive but non-study tasks (chores, admin, etc.)</li>
+              <li><strong style="color:#34d399">Fun</strong> — leisure time, tracked so you can see your balance</li>
+            </ul>
+          </div>
+
+          <div style="background:var(--surface2);border-radius:12px;padding:1rem 1.1rem">
+            <div style="font-weight:700;margin-bottom:0.45rem;color:var(--accent2)">🖱️ Drag onto the Timeline</div>
+            <div>Drag any block from the palette and <strong>drop it onto any hour slot</strong> in the day column. The block snaps to that time and fills a default duration. You can place the same block type multiple times in a day.</div>
+          </div>
+
+          <div style="background:var(--surface2);border-radius:12px;padding:1rem 1.1rem">
+            <div style="font-weight:700;margin-bottom:0.45rem;color:var(--accent2)">↕️ Resize & Move Placed Blocks</div>
+            <div>Once a block is on the timeline you can:</div>
+            <ul style="margin:0.5rem 0 0 1rem;display:flex;flex-direction:column;gap:0.25rem">
+              <li><strong>Move it</strong> — drag the block up or down to a different time slot</li>
+              <li><strong>Resize it</strong> — grab the <strong>bottom edge handle</strong> and drag down (or up) to make the session longer or shorter</li>
+              <li><strong>Remove it</strong> — click the ✕ icon that appears on the block</li>
+            </ul>
+          </div>
+
+          <div style="background:var(--surface2);border-radius:12px;padding:1rem 1.1rem">
+            <div style="font-weight:700;margin-bottom:0.45rem;color:var(--accent2)">🗓️ Recurring Classes (My Classes)</div>
+            <div>Open <strong>⚙ My Classes</strong> in the top-right to add recurring timetable classes (lectures, tutorials, etc.). They appear automatically on the right day every week and can't be dragged — they're locked as fixed commitments. You can also set <strong>break weeks</strong> (public holidays, mid-sem break) where classes disappear for that period.</div>
+          </div>
+
+          <div style="background:var(--surface2);border-radius:12px;padding:1rem 1.1rem">
+            <div style="font-weight:700;margin-bottom:0.45rem;color:var(--accent2)">🪟 Free Study Windows & Lock In</div>
+            <div>Below the timetable the planner shows <strong>free windows</strong> — gaps between your scheduled blocks where you could study. Each window has a <strong>Lock In</strong> button that jumps to the Tracker and starts a focused study session pre-set to that duration.</div>
+          </div>
+
+          <div style="background:var(--surface2);border-radius:12px;padding:1rem 1.1rem">
+            <div style="font-weight:700;margin-bottom:0.45rem;color:var(--accent2)">📊 Week in Review (sidebar)</div>
+            <div>The right sidebar analyses your current week. It shows total study hours, a daily breakdown, how productive each day was, and how close you are to your weekly study goal. Data updates live as you edit the timetable.</div>
+          </div>
+
+        </div>
+
+        <button onclick="document.getElementById('plannerInfoModal').style.display='none'"
+          style="margin-top:1.4rem;width:100%;padding:0.65rem;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:0.9rem;font-weight:600;cursor:pointer">
+          Got it!
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+  }
 </script>
+
+<!-- Class Setup Modal -->
+<div id="classSetupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.75rem;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <h2 style="margin:0;font-size:1.1rem;color:var(--text)">📅 My Timetable</h2>
+      <button onclick="closeClassSetup()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:0.2rem 0.5rem">✕</button>
+    </div>
+
+    <!-- Add class form -->
+    <div style="background:var(--surface2);border-radius:12px;padding:1.1rem;margin-bottom:1.25rem">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:0.9rem">Add a recurring class</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.65rem">
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.25rem">Day</div>
+          <select id="csDay" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.42rem 0.6rem;font-size:0.85rem;outline:none">
+            <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option>
+            <option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.25rem">Code <span style="font-weight:400">(optional)</span></div>
+          <input id="csCode" type="text" placeholder="e.g. MATH101" maxlength="20"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.42rem 0.6rem;font-size:0.85rem;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.25rem">Class name</div>
+          <input id="csName" type="text" placeholder="e.g. Calculus Lecture" maxlength="50"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.42rem 0.6rem;font-size:0.85rem;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.25rem">Location <span style="font-weight:400">(optional)</span></div>
+          <input id="csLoc" type="text" placeholder="e.g. Room 101" maxlength="50"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.42rem 0.6rem;font-size:0.85rem;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.25rem">Start time</div>
+          <input id="csStart" type="time"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.42rem 0.6rem;font-size:0.85rem;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.25rem">End time</div>
+          <input id="csEnd" type="time"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.42rem 0.6rem;font-size:0.85rem;outline:none"/>
+        </div>
+      </div>
+      <div style="margin-bottom:0.8rem">
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.4rem">Color</div>
+        <div id="csColorPicker" style="display:flex;gap:0.45rem;flex-wrap:wrap;align-items:center"></div>
+      </div>
+      <button onclick="addClassEntry()"
+        style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0.58rem;font-size:0.88rem;font-weight:700;cursor:pointer">+ Add Class</button>
+    </div>
+
+    <!-- Existing classes -->
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:0.75rem">Your classes</div>
+    <div id="csClassList"></div>
+
+    <!-- Restore default blocks -->
+    <div style="margin-top:1rem;text-align:right">
+      <button onclick="restoreDefaultBlocks()" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline">↩ Restore default blocks (Breakfast, Lunch, Gym)</button>
+    </div>
+
+    <!-- Timeline hours -->
+    <div style="margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border)">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:0.75rem">Timeline Hours</div>
+      <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap;margin-bottom:0.5rem">
+        <label style="font-size:0.82rem;color:var(--muted)">Start</label>
+        <select id="tlStart" onchange="saveTlRangeSetting()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.35rem 0.6rem;font-size:0.82rem;outline:none">
+          <option value="4">4 AM</option><option value="5">5 AM</option><option value="6">6 AM</option>
+          <option value="7" selected>7 AM</option><option value="8">8 AM</option><option value="9">9 AM</option><option value="10">10 AM</option>
+        </select>
+        <label style="font-size:0.82rem;color:var(--muted)">End</label>
+        <select id="tlEnd" onchange="saveTlRangeSetting()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.35rem 0.6rem;font-size:0.82rem;outline:none">
+          <option value="20">8 PM</option><option value="21">9 PM</option><option value="22">10 PM</option>
+          <option value="23">11 PM</option><option value="24">Midnight</option><option value="25" selected>1 AM</option><option value="26">2 AM</option><option value="27">3 AM</option>
+        </select>
+      </div>
+      <p style="font-size:0.75rem;color:var(--muted);margin:0">Changes apply when you close this panel.</p>
+    </div>
+
+    <!-- Break weeks -->
+    <div style="margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border)">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:0.75rem">Break / Holiday Weeks</div>
+      <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:0.65rem">
+        <input id="bwStart" type="date" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.38rem 0.6rem;font-size:0.82rem;outline:none"/>
+        <span style="color:var(--muted);font-size:0.8rem">to</span>
+        <input id="bwEnd" type="date" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.38rem 0.6rem;font-size:0.82rem;outline:none"/>
+        <input id="bwLabel" type="text" placeholder="Label (e.g. Mid-semester break)"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.38rem 0.6rem;font-size:0.82rem;outline:none;flex:1;min-width:120px"/>
+        <button onclick="addBreakWeek()"
+          style="background:var(--surface2);border:1px solid var(--border);color:var(--accent2);border-radius:8px;padding:0.38rem 0.8rem;font-size:0.82rem;font-weight:600;cursor:pointer;white-space:nowrap">+ Add</button>
+      </div>
+      <div id="bwList"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

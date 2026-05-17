@@ -247,6 +247,8 @@
     }
     .dl-item:hover .dl-tick-btn { opacity: 0.35; border-color: var(--border); color: var(--muted); }
     .dl-tick-btn:hover { opacity: 1 !important; border-color: var(--green) !important; color: var(--green) !important; }
+    .dl-item:hover .dl-tick-btn[title="Delete"] { opacity: 0.35; border-color: var(--border); color: var(--red); }
+    .dl-tick-btn[title="Delete"]:hover { opacity: 1 !important; border-color: var(--red) !important; color: var(--red) !important; }
     .dl-completed-header {
       font-size: 0.72rem; color: var(--muted); opacity: 0.5;
       margin-top: 0.75rem; margin-bottom: 0.35rem; padding-left: 0.25rem;
@@ -697,6 +699,7 @@
         <button class="btn-lockin" id="lockInBtn" onclick="toggleLockIn()" title="Start a lock-in study session">🔒 Lock In</button>
         <button class="btn-float" onclick="popoutTimer()" title="Float on top of all windows" style="margin-left:auto">⊞ Float</button>
         <button onclick="resetBreakBank()" title="Reset break bank & wasted time to zero" style="background:transparent;border:1px solid rgba(244,63,94,0.3);color:#f43f5e;border-radius:8px;padding:0.4rem 0.7rem;font-size:0.78rem;font-weight:600;cursor:pointer;">↺ Reset Bank</button>
+        <button onclick="showBreakBankInfo()" title="How does the break bank work?" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:0.4rem 0.6rem;font-size:0.78rem;cursor:pointer;">ℹ</button>
       </div>
       <div class="break-bar" id="breakBar">
         <span style="font-size:1.1rem">☕</span>
@@ -771,7 +774,29 @@
     <div class="card deadlines-card">
       <div class="log-header">
         <h2 style="margin-bottom:0">Upcoming Deadlines</h2>
-        <span style="font-size:0.75rem;color:var(--muted)">Click to study for it →</span>
+        <button onclick="toggleAddDeadlineForm()" id="addDlBtn"
+          style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:0.3rem 0.8rem;font-size:0.78rem;font-weight:700;cursor:pointer;flex:none">+ Add</button>
+      </div>
+      <!-- Add deadline form (hidden by default) -->
+      <div id="addDlForm" style="display:none;background:var(--surface2);border-radius:10px;padding:0.9rem;margin-bottom:0.75rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem">
+          <input id="dlName" type="text" placeholder="Task / exam name" maxlength="60"
+            style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0.42rem 0.65rem;font-size:0.85rem;outline:none"/>
+          <input id="dlSubject" type="text" placeholder="Subject (e.g. Math)" maxlength="30"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0.42rem 0.65rem;font-size:0.85rem;outline:none"/>
+          <input id="dlWeight" type="text" placeholder="Weight (e.g. 20%, Final)" maxlength="15"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0.42rem 0.65rem;font-size:0.85rem;outline:none"/>
+          <input id="dlDue" type="datetime-local"
+            style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0.42rem 0.65rem;font-size:0.85rem;outline:none"/>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.82rem;color:var(--muted);cursor:pointer">
+            <input type="checkbox" id="dlIsExam" style="cursor:pointer"/> Exam
+          </label>
+          <span style="flex:1"></span>
+          <button onclick="toggleAddDeadlineForm()" style="background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:0.82rem;padding:0.35rem 0.75rem;cursor:pointer">Cancel</button>
+          <button onclick="submitAddDeadline()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:0.82rem;font-weight:700;padding:0.35rem 0.9rem;cursor:pointer">Save</button>
+        </div>
       </div>
       <div class="deadlines-list" id="deadlinesList"></div>
     </div>
@@ -826,7 +851,8 @@
     <!-- Productivity Ratio -->
     <div>
       <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.85rem">Productivity Ratio</div>
-      <p style="font-size:0.83rem;color:var(--muted);margin:0 0 1rem">How much break time you earn per study time. e.g. 25 min study → 5 min break.</p>
+      <p style="font-size:0.83rem;color:var(--muted);margin:0 0 0.5rem">How much break time you earn per study time. e.g. 25 min study → 5 min break.</p>
+      <p style="font-size:0.76rem;color:var(--accent2);background:rgba(124,106,247,0.08);border-radius:8px;padding:0.5rem 0.7rem;margin:0 0 1rem">💡 Research tip: Studies suggest <strong>52 min focus : 17 min break</strong> for peak productivity. The classic Pomodoro is 25 : 5. Experiment and find what works for you!</p>
       <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap">
         <input id="ratioStudyInput" type="number" min="1" max="480" value="3" style="width:56px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.35rem 0.5rem;font-size:0.9rem;text-align:center;outline:none"/>
         <span style="color:var(--muted);font-size:0.85rem">min study</span>
@@ -1261,6 +1287,48 @@
       const perMin = (r.focusMins / r.breakMins).toFixed(1).replace(/\.0$/, '');
       el.textContent = `${rs}:${rb} — ${perMin} min focus per 1 min break`;
     }
+  }
+
+  // ---- Break bank info ----
+  function showBreakBankInfo() {
+    const existing = document.getElementById('breakBankInfoModal');
+    if (existing) { existing.remove(); return; }
+    const overlay = document.createElement('div');
+    overlay.id = 'breakBankInfoModal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.75rem;max-width:460px;width:100%;position:relative;max-height:88vh;overflow-y:auto">
+        <button onclick="document.getElementById('breakBankInfoModal').remove()"
+          style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer">✕</button>
+        <h3 style="margin:0 0 1.25rem;font-size:1.05rem">📖 How it all works</h3>
+
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#60a5fa;margin-bottom:0.5rem">☕ Break Bank</div>
+        <div style="font-size:0.85rem;color:var(--muted);line-height:1.7;display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.25rem">
+          <p>Every minute you study earns break credit based on your <strong style="color:var(--text)">Productivity Ratio</strong> in Settings.</p>
+          <p>At the default <strong style="color:var(--text)">3:1 ratio</strong>, 30 min of study = 10 min break credit.</p>
+          <p>Hit <strong style="color:var(--text)">☕ Break</strong> to use that credit. If you pause past your earned balance, the timer turns red and counts as <strong style="color:var(--red)">⚠️ Wasted Time</strong>.</p>
+          <p>The bank resets when you click <strong style="color:var(--text)">🌙 End Day</strong> or at your auto-reset time.</p>
+        </div>
+
+        <div style="border-top:1px solid var(--border);margin-bottom:1.25rem"></div>
+
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#a78bfa;margin-bottom:0.5rem">🔒 Lock In Mode</div>
+        <div style="font-size:0.85rem;color:var(--muted);line-height:1.7;display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.25rem">
+          <p><strong style="color:var(--text)">Lock In</strong> is a focused study session with a set end time — like blocking out your entire afternoon to study.</p>
+          <p>During Lock In, you run back-to-back study sessions. When one session ends, a short break automatically starts using your earned break credit, then you jump straight into the next session.</p>
+          <p>At the end of a Lock In, you get a <strong style="color:var(--text)">full report</strong> showing total study time, breaks taken, and wasted time.</p>
+          <p>Use <strong style="color:var(--text)">⛔ End Lock-In</strong> in the break bar to finish early.</p>
+        </div>
+
+        <div style="border-top:1px solid var(--border);margin-bottom:1.25rem"></div>
+
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#fb923c;margin-bottom:0.5rem">⊞ Float</div>
+        <div style="font-size:0.85rem;color:var(--muted);line-height:1.7">
+          <p>Opens a small always-on-top timer window so you can see your countdown even when using other apps. Double-tap <strong style="color:var(--text)">Alt</strong> anywhere to pause/resume without switching back to this tab.</p>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
   }
 
   // ---- Settings modal ----
@@ -2400,30 +2468,14 @@
     }).join('');
   }
 
-  // ---- Upcoming Deadlines (synced from Google Calendar) ----
-  const DEADLINES = [
-    // ── Week 8 ──
-    { name: 'Stats Mobius',                      subject: 'MATH2089',  due: '2026-04-09T09:00:00+10:00', weight: '0.5%' },
-    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-04-10T09:00:00+10:00', weight: '20%' },
-    // ── Week 9 ──
-    { name: 'NM Mobius',                        subject: 'MATH2089',  due: '2026-04-13T09:00:00+10:00', weight: '1.25%' },
-    { name: 'NM Test 2',                        subject: 'MATH2089',  due: '2026-04-14T09:00:00+10:00', weight: '5%', exam: true },
-    { name: 'FCS Lab – Week 9',                 subject: 'MTRN3210',  due: '2026-04-14T23:59:00+10:00', weight: '20%' },
-    { name: 'FCS Quiz – Week 9',                subject: 'MTRN3210',  due: '2026-04-15T12:00:00+10:00', weight: '2%' },
-    { name: 'Stats Mobius',                     subject: 'MATH2089',  due: '2026-04-16T09:00:00+10:00', weight: '0.5%' },
-    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-04-17T09:00:00+10:00', weight: '20%' },
-    // ── Week 10 ──
-    { name: 'Stats Mobius',                     subject: 'MATH2089',  due: '2026-04-23T09:00:00+10:00', weight: '0.5%' },
-    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-04-24T09:00:00+10:00', weight: '20%' },
-    // ── Week 11 ──
-    { name: 'Stats Mobius',                     subject: 'MATH2089',  due: '2026-04-30T09:00:00+10:00', weight: '0.5%' },
-    { name: 'GENE1500 Startup Pitch @ MCIC',    subject: 'GENE1500',  due: '2026-04-30T10:00:00+10:00', weight: '30%', exam: true, loc: 'MCIC' },
-    { name: 'GENE1500 Weekly Checkpoint',        subject: 'GENE1500',  due: '2026-05-01T09:00:00+10:00', weight: '20%' },
-    // ── Finals ──
-    { name: 'MATH2089 Final Exam',              subject: 'MATH2089',  due: '2026-05-02T09:00:00+10:00', weight: 'Final', exam: true },
-    { name: 'NM Mobius',                        subject: 'MATH2089',  due: '2026-05-03T09:00:00+10:00', weight: '1.25%' },
-    { name: 'MTRN3210 Final Exam',              subject: 'MTRN3210',  due: '2026-05-09T14:00:00+10:00', weight: 'Final', exam: true, loc: 'Moodle' },
-  ];
+  // ---- Upcoming Deadlines (user-editable, stored in localStorage) ----
+  const DEADLINES_STORE_KEY = 'user_deadlines_v1';
+  function loadDeadlines() {
+    try { return JSON.parse(localStorage.getItem(DEADLINES_STORE_KEY)) || []; }
+    catch(e) { return []; }
+  }
+  function saveDeadlinesStore(arr) { localStorage.setItem(DEADLINES_STORE_KEY, JSON.stringify(arr)); }
+  let DEADLINES = loadDeadlines();
 
   const COMPLETED_DL_KEY = 'completed_deadlines_v1';
   function getCompletedDLs() {
@@ -2447,6 +2499,43 @@
   function restoreDeadline(key) {
     const arr = getCompletedDLs().filter(k => k !== key);
     saveCompletedDLs(arr);
+    renderDeadlines();
+  }
+
+  function deleteDeadline(key) {
+    if (!confirm('Delete this deadline permanently?')) return;
+    DEADLINES = DEADLINES.filter(d => dlKey(d) !== key);
+    saveDeadlinesStore(DEADLINES);
+    // Also remove from completed list if present
+    const comp = getCompletedDLs().filter(k => k !== key);
+    saveCompletedDLs(comp);
+    renderDeadlines();
+  }
+
+  function toggleAddDeadlineForm() {
+    const form = document.getElementById('addDlForm');
+    form.style.display = form.style.display === 'none' ? '' : 'none';
+    if (form.style.display !== 'none') document.getElementById('dlName').focus();
+  }
+
+  function submitAddDeadline() {
+    const name    = document.getElementById('dlName').value.trim();
+    const subject = document.getElementById('dlSubject').value.trim();
+    const weight  = document.getElementById('dlWeight').value.trim();
+    const due     = document.getElementById('dlDue').value;
+    const isExam  = document.getElementById('dlIsExam').checked;
+    if (!name) { document.getElementById('dlName').focus(); return; }
+    if (!due)  { document.getElementById('dlDue').focus(); return; }
+    const entry = { name, subject, due: new Date(due).toISOString(), weight: weight || undefined, exam: isExam || undefined };
+    DEADLINES.push(entry);
+    DEADLINES.sort((a,b) => new Date(a.due) - new Date(b.due));
+    saveDeadlinesStore(DEADLINES);
+    document.getElementById('dlName').value    = '';
+    document.getElementById('dlSubject').value = '';
+    document.getElementById('dlWeight').value  = '';
+    document.getElementById('dlDue').value     = '';
+    document.getElementById('dlIsExam').checked = false;
+    toggleAddDeadlineForm();
     renderDeadlines();
   }
 
@@ -2500,6 +2589,7 @@
               <div class="dl-due">${dueStr}</div>
             </div>
             <button class="dl-tick-btn" onclick="event.stopPropagation();completeDeadline('${key}')" title="Mark as done">✓</button>
+            <button class="dl-tick-btn" onclick="event.stopPropagation();deleteDeadline('${key}')" title="Delete" style="color:var(--red);opacity:0">🗑</button>
           </div>`;
       }).join('');
     }
